@@ -1,0 +1,10 @@
+config:
+  MD013:
+    line_length: 120
+    tables: false
+  # Allow the <img> cover tag and <details> blocks.
+  MD033:
+    allowed_elements: [img, details, summary, br]
+ignores:
+  - "**/.terraform/**"
+  - ".venv/**"

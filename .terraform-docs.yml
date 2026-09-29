@@ -1,0 +1,14 @@
+formatter: markdown table
+output:
+  file: README.md
+  mode: inject
+sort:
+  enabled: true
+  by: required
+settings:
+  anchor: false
+  html: false
+  default: true
+  hide-empty: true
+  required: true
+  type: true

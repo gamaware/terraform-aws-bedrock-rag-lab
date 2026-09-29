@@ -1,0 +1,40 @@
+{"id": "q01", "question": "How many days does a customer have to bring back an item for a refund?", "relevant": ["returns-standard-window"], "must_include": ["30 days"]}
+{"id": "q02", "question": "Do Gold loyalty members get a longer return period?", "relevant": ["returns-standard-window", "store-loyalty-program"], "must_include": ["45 days"]}
+{"id": "q03", "question": "A customer has no receipt. What can we offer if we cannot find the purchase?", "relevant": ["returns-without-receipt"], "must_include": ["store credit"]}
+{"id": "q04", "question": "How many returns without a receipt can one person make per year?", "relevant": ["returns-without-receipt"], "must_include": ["three"]}
+{"id": "q05", "question": "Is there a restocking fee on an opened laptop?", "relevant": ["returns-opened-electronics"], "must_include": ["15 percent"]}
+{"id": "q06", "question": "Can someone return opened earbuds that work fine?", "relevant": ["returns-opened-electronics"], "must_include": ["defective"]}
+{"id": "q07", "question": "Can a customer return an engraved item?", "relevant": ["returns-final-sale"], "must_include": ["cannot be returned"]}
+{"id": "q08", "question": "Can I return something I bought on the website at a store?", "relevant": ["returns-online-orders-in-store"], "must_include": ["any Harbor Goods store"]}
+{"id": "q09", "question": "What does a mail return cost the customer?", "relevant": ["returns-online-orders-in-store"], "must_include": ["6.95"]}
+{"id": "q10", "question": "The order arrived broken. How long does the customer have to report it?", "relevant": ["returns-damaged-on-arrival"], "must_include": ["7 days"]}
+{"id": "q11", "question": "How is a large cash purchase refunded?", "relevant": ["returns-refund-methods"], "must_include": ["check"]}
+{"id": "q12", "question": "How long until a credit card refund shows up?", "relevant": ["returns-refund-methods"], "must_include": ["10 business days"]}
+{"id": "q13", "question": "What warranty comes with Harbor Tech products?", "relevant": ["warranty-standard-coverage"], "must_include": ["1-year"]}
+{"id": "q14", "question": "How long is the frame warranty on Harbor Home furniture?", "relevant": ["warranty-standard-coverage"], "must_include": ["5-year"]}
+{"id": "q15", "question": "Until when can a customer add a Harbor Care protection plan after buying?", "relevant": ["warranty-extended-protection-plan"], "must_include": ["30 days"]}
+{"id": "q16", "question": "How fast does Customer Care decide on a warranty case?", "relevant": ["warranty-claim-process"], "must_include": ["2 business days"]}
+{"id": "q17", "question": "Is water damage on a phone covered by the warranty?", "relevant": ["warranty-exclusions"], "must_include": ["Harbor Care"]}
+{"id": "q18", "question": "How long is the mattress comfort trial?", "relevant": ["warranty-furniture-assembly", "returns-standard-window"], "must_include": ["100-night"]}
+{"id": "q19", "question": "What does in-home furniture assembly cost?", "relevant": ["warranty-furniture-assembly"], "must_include": ["79"]}
+{"id": "q20", "question": "What does expedited shipping cost and how long does it take?", "relevant": ["shipping-standard-options"], "must_include": ["12.99"]}
+{"id": "q21", "question": "Can furniture be delivered next day?", "relevant": ["shipping-standard-options"], "must_include": ["not available"]}
+{"id": "q22", "question": "What is the minimum order for free shipping?", "relevant": ["shipping-free-threshold"], "must_include": ["75"]}
+{"id": "q23", "question": "Tracking has not moved for a week. When is a package considered lost?", "relevant": ["shipping-lost-package"], "must_include": ["5 business days"]}
+{"id": "q24", "question": "Which countries does Harbor Goods ship to?", "relevant": ["shipping-international"], "must_include": ["Canada"]}
+{"id": "q25", "question": "What is the fee for room-of-choice delivery of a sofa?", "relevant": ["shipping-large-items-freight"], "must_include": ["99"]}
+{"id": "q26", "question": "Can the delivery address be changed after the order has shipped?", "relevant": ["shipping-address-changes"], "must_include": ["redirect"]}
+{"id": "q27", "question": "How long is a pickup order held in store?", "relevant": ["shipping-click-and-collect"], "must_include": ["7 days"]}
+{"id": "q28", "question": "What insurance does a new vendor need before onboarding?", "relevant": ["supplier-onboarding"], "must_include": ["2 million"]}
+{"id": "q29", "question": "What are our payment terms for supplier invoices?", "relevant": ["supplier-invoice-terms"], "must_include": ["net 60"]}
+{"id": "q30", "question": "When must receiving report a damaged inbound pallet?", "relevant": ["supplier-damaged-inbound"], "must_include": ["48 hours"]}
+{"id": "q31", "question": "What is the limit for gifts an employee can accept from a vendor?", "relevant": ["supplier-gifts-policy"], "must_include": ["50"]}
+{"id": "q32", "question": "Do we price match an online marketplace listing?", "relevant": ["store-price-match"], "must_include": ["not price matched"]}
+{"id": "q33", "question": "Do gift cards expire?", "relevant": ["store-gift-cards"], "must_include": ["never expire"]}
+{"id": "q34", "question": "How much of a deposit is required for layaway?", "relevant": ["store-layaway"], "must_include": ["20 percent"]}
+{"id": "q35", "question": "What is the parental leave policy for store employees?", "relevant": [], "must_include": []}
+{"id": "q36", "question": "How do I reset the password on the self-checkout kiosk?", "relevant": [], "must_include": []}
+{"id": "q37", "question": "What is the quarterly sales target for the downtown flagship?", "relevant": [], "must_include": []}
+{"id": "q38", "question": "Which vaccine schedule does the pharmacy counter follow?", "relevant": [], "must_include": []}
+{"id": "q39", "question": "What is the dress code for warehouse forklift drivers?", "relevant": [], "must_include": []}
+{"id": "q40", "question": "How many parking spaces does the Riverside distribution center have?", "relevant": [], "must_include": []}

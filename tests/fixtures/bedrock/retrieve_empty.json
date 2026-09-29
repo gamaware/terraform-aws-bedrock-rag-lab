@@ -1,0 +1,10 @@
+{
+  "retrievalResults": [
+    {
+      "content": {"type": "TEXT", "text": "Layaway is available in store for purchases of USD 100 or more."},
+      "location": {"type": "S3", "s3Location": {"uri": "s3://harbor-goods-policies-111122223333/store-ops/store-layaway.md"}},
+      "score": 0.18,
+      "metadata": {"doc_type": "store-ops", "title": "Layaway", "doc_id": "store-layaway"}
+    }
+  ]
+}

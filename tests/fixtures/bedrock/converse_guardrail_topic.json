@@ -1,0 +1,6 @@
+{
+  "output": {"message": {"role": "assistant", "content": [{"text": "This assistant answers questions about Harbor Goods store and supplier policies. It can't help with that request."}]}},
+  "stopReason": "guardrail_intervened",
+  "usage": {"inputTokens": 0, "outputTokens": 0, "totalTokens": 0},
+  "trace": {"guardrail": {"inputAssessment": {"gr-harbor": {"topicPolicy": {"topics": [{"name": "legal-advice", "type": "DENY", "action": "BLOCKED"}]}}}}}
+}

@@ -1,0 +1,12 @@
+# Used by `make checkov` and CI. Skips live next to the resource with their
+# reason (#checkov:skip=...), never here.
+directory:
+  - infra/terraform
+  - .github/workflows
+framework:
+  - terraform
+  - github_actions
+skip-path:
+  - \.terraform
+quiet: true
+compact: true
