@@ -17,7 +17,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
+import time
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from statistics import mean
@@ -87,13 +89,21 @@ def score_retrieval(
     }
 
 
-def score_answers(port: BedrockPort, settings: Settings, golden: Sequence[GoldenQuestion]) -> dict[str, Any]:
+def score_answers(
+    port: BedrockPort, settings: Settings, golden: Sequence[GoldenQuestion], *, timed: bool = False
+) -> dict[str, Any]:
+    """Answer every golden question. `timed` (live runs) records wall-clock latency per question, retrieval included."""
     rows = []
+    latencies: list[float] = []
     for q in golden:
+        started = time.perf_counter()
         answer = answer_question(q.question, port=port, settings=settings, sleep=lambda _: None)
+        latencies.append((time.perf_counter() - started) * 1000)
         cited = [c["uri"].rsplit("/", 1)[-1].removesuffix(".md") for c in answer.citations]
         text = answer.answer.lower()
         row: dict[str, Any] = {"id": q.qid, "reason": answer.reason, "cited": cited, "usage": answer.usage}
+        if timed:
+            row["latency_ms"] = round(latencies[-1])
         if q.answerable:
             row["relevant_citation"] = not answer.refused and any(d in q.relevant for d in cited)
             row["correct"] = row["relevant_citation"] and all(p.lower() in text for p in q.must_include)
@@ -103,6 +113,14 @@ def score_answers(port: BedrockPort, settings: Settings, golden: Sequence[Golden
     answerable = [r for r in rows if "correct" in r]
     unanswerable = [r for r in rows if "refused" in r]
     usages = [r["usage"] for r in rows if r["usage"]]
+    timing = {}
+    if timed:
+        ordered = sorted(latencies)
+        timing = {
+            "latency_p50_ms": round(ordered[len(ordered) // 2]),
+            "latency_p95_ms": round(ordered[min(len(ordered) - 1, math.ceil(0.95 * len(ordered)) - 1)]),
+            "latency_max_ms": round(ordered[-1]),
+        }
     return {
         "answered_with_relevant_citation": round(mean(r["relevant_citation"] for r in answerable), 3),
         "answer_contains_expected": round(mean(r["correct"] for r in answerable), 3),
@@ -110,6 +128,7 @@ def score_answers(port: BedrockPort, settings: Settings, golden: Sequence[Golden
         "model_calls": len(usages),
         "mean_input_tokens": round(mean(u["inputTokens"] for u in usages)) if usages else 0,
         "mean_output_tokens": round(mean(u["outputTokens"] for u in usages)) if usages else 0,
+        **timing,
         "questions": rows,
     }
 
@@ -179,6 +198,11 @@ def summary(results: Mapping[str, Any]) -> str:
         f"{a['refusal_on_unanswerable']:.3f}, model calls {a['model_calls']}, mean tokens in/out "
         f"{a['mean_input_tokens']}/{a['mean_output_tokens']}",
     ]
+    if "latency_p50_ms" in a:
+        lines.append(
+            f"latency per question (retrieve + converse): p50 {a['latency_p50_ms']} ms, p95 {a['latency_p95_ms']} ms,"
+            f" max {a['latency_max_ms']} ms"
+        )
     return "\n".join(lines)
 
 
@@ -215,7 +239,7 @@ def run_live(args: argparse.Namespace, config: Mapping[str, Any]) -> dict[str, A
         "embedding_model": "amazon.titan-embed-text-v2:0 (live)",
         "strategy": "live",
         "retrieval": {"live": {"chunks": 0, **{m: score_retrieval(results, golden, selection) for m in MODES}}},
-        "answers": score_answers(port, settings, golden),
+        "answers": score_answers(port, settings, golden, timed=True),
     }
 
 

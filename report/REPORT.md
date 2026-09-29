@@ -23,9 +23,11 @@ Results on the 40-question golden set, offline:
 - **Vector store:** S3 Vectors costs cents a month for this corpus; the OpenSearch Serverless floor starts at about
   USD 175 a month.
 
-What is still open: the offline retriever is a stand-in for Titan embeddings, so the relevance cut-off
-(`min_score`) and the answer-quality gate must be calibrated with the live run (`make test-live`, section 7) before
-go-live.
+What is still open: the live run on 2026-09-28 (section 9) confirmed retrieval (recall@5 1.000, MRR 0.978 with Titan
+embeddings) and refusal of every unanswerable question, but missed three gates: citation precision 0.691, answered
+with a relevant citation 0.794, and answer contains the expected facts 0.676 (gate 0.8). Six answerable questions were
+blocked by the guardrail. Tuning the guardrail's grounding threshold and the relevance cut-off (`min_score`) comes
+before go-live.
 
 ## 1. Scope and method
 
@@ -184,7 +186,7 @@ knowledge base, and a per-vector metadata limit. At this volume none of them is 
 
 | Risk | Likelihood | Impact | Mitigation in this delivery | Next step |
 | --- | --- | --- | --- | --- |
-| Relevance cut-off tuned on proxy scores | High | Too many or too few refusals | `min_score` and `relative_floor` are Terraform variables; the live run prints every score | Calibrate with `make test-live`, record the live gate results here |
+| Relevance cut-off tuned on proxy scores | High | Too many or too few refusals | `min_score` and `relative_floor` are Terraform variables; the live run prints every score | Live run (section 9): citation precision 0.691 against a 0.7 gate; raise `min_score` and re-run |
 | A policy changes and the index lags | Medium | Answers quote the old policy | Upload triggers ingestion; failed triggers alarm through a dead-letter queue | Add a nightly full sync if uploads are batched |
 | Guardrail false positives on real questions | Medium | Staff get refusals | Red-team set includes clean look-alikes (order numbers, SKUs, prices) | Review interventions on the dashboard for the first two weeks |
 | Staff paste PII the patterns miss (names, addresses) | Medium | PII in the Retrieve query and logs | Guardrail screens the question and masks names and addresses in the answer; logs keep a hash of the question, never its text | Add patterns from the first month of intervention findings |
@@ -202,3 +204,44 @@ make report-data   # rewrite the generated tables in this report
 The live run (`make test-live`, maintainer's sandbox account only) deploys the three stacks, ingests the fixture
 corpus, runs the same evaluation with `--live`, sends the red-team set through the guardrail, calls `POST /ask`, and
 destroys everything. See [docs/live-test.md](../docs/live-test.md).
+
+## 9. Live run results
+
+> **Live run** in the maintainer's sandbox AWS account, us-east-1, on 2026-09-28. The stack was created, tested and
+> destroyed in one run. Identifiers and ARNs are omitted.
+
+The plan pre-flight passed for all three stacks: nothing public, and every taggable resource tagged with the run. The
+ingestion job scanned 33 documents with their 33 metadata sidecars, and none failed. The golden-set evaluation ran
+against the deployed knowledge base, Nova Lite through the application inference profile, and the guardrail:
+
+| Metric | Live | Gate | Result |
+| --- | --- | --- | --- |
+| Recall@5 | 1.000 | 0.9 | pass |
+| MRR | 0.978 | 0.8 | pass |
+| Citation precision | 0.691 | 0.7 | fail |
+| Answered with a relevant citation | 0.794 | 0.8 | fail |
+| Refused unanswerable questions | 1.000 | 0.8 | pass |
+| Answer contains the expected facts | 0.676 | 0.8 (live only) | fail |
+
+| Per question (40 model calls) | Value |
+| --- | --- |
+| Mean input tokens | 233 |
+| Mean output tokens | 27 |
+| Latency, retrieve and converse, p50 | 1,707 ms |
+| Latency, p95 | 2,480 ms |
+| Latency, max | 3,007 ms |
+
+What the misses show:
+
+- **Retrieval is not the problem.** The relevant policy is in the top five for every answerable question.
+- **Guardrail false positives:** the guardrail blocked six of the 34 answerable questions. This is the largest loss.
+  The "guardrail false positives" risk in section 7 is real, and the grounding threshold needs tuning against these
+  cases.
+- **Phrasing and precision:** four answers cited the right policy but missed an expected phrase. The default
+  `min_score` of 0.35 lets extra sources through, so citation precision falls just below its gate.
+
+The evaluation gate stopped the run before the guardrail red-team set and the `POST /ask` test-invoke, so those two
+checks still need a live run. Two fixes were needed to deploy: the KMS key policy now accepts the S3 Vectors index
+ARN as the indexing service's source, and the inference profile description no longer uses characters the Bedrock
+API rejects. The run cost well under USD 1.
+

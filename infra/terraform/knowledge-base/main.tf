@@ -37,7 +37,12 @@ resource "aws_kms_key" "kb" {
         Resource  = "*"
         Condition = {
           StringEquals = { "aws:SourceAccount" = local.account_id }
-          ArnLike      = { "aws:SourceArn" = "arn:${local.partition}:s3vectors:${local.region}:${local.account_id}:bucket/${var.name}-vectors" }
+          # The indexing service calls with the index ARN (bucket/<name>/index/<index>) as the source, so the
+          # bucket ARN alone does not match; allow this bucket and anything under it only.
+          ArnLike = { "aws:SourceArn" = [
+            "arn:${local.partition}:s3vectors:${local.region}:${local.account_id}:bucket/${var.name}-vectors",
+            "arn:${local.partition}:s3vectors:${local.region}:${local.account_id}:bucket/${var.name}-vectors/*",
+          ] }
         }
       },
       {

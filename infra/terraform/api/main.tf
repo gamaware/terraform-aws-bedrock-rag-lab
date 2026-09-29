@@ -59,8 +59,9 @@ resource "aws_kms_alias" "api" {
 
 # Tags on the profile carry into Cost Explorer, so answer tokens show up as their own cost line.
 resource "aws_bedrock_inference_profile" "answers" {
-  name        = "${var.name}-answers"
-  description = "Answers for the Harbor Goods policy assistant (${var.answer_model_id})"
+  name = "${var.name}-answers"
+  # The API accepts only letters, digits, ":" and "." with single separators: no parentheses or commas.
+  description = "Answers for the Harbor Goods policy assistant using ${var.answer_model_id}"
 
   model_source {
     copy_from = local.model_source_arn

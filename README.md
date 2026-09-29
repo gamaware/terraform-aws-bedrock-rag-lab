@@ -38,6 +38,24 @@ Bases with Amazon S3 Vectors and a Bedrock guardrail, defined in Terraform and e
 | [`infra/terraform/`](infra/terraform) | Three stacks and the tests that pin their guarantees |
 | [`docs/runbook.md`](docs/runbook.md) | Re-ingest, rotate the model, calibrate selection, investigate a bad answer |
 
+## Results
+
+**Live run** in a sandbox AWS account (us-east-1, 2026-09-28): deployed, tested and destroyed in one run, with no
+public resources. The 40-question golden set ran against the deployed knowledge base, Nova Lite and the guardrail.
+
+| Metric | Live | Gate |
+| --- | --- | --- |
+| Recall@5 / MRR | 1.000 / 0.978 | 0.9 / 0.8 |
+| Refused unanswerable questions | 1.000 | 0.8 |
+| Citation precision | 0.691 | 0.7 (missed) |
+| Answered with a relevant citation | 0.794 | 0.8 (missed) |
+| Answer contains the expected facts | 0.676 | 0.8 (missed) |
+| Tokens per question, in / out | 233 / 27 | none |
+| Latency p50 / p95 | 1.7 s / 2.5 s | none |
+
+Retrieval passes. The guardrail blocked six answerable questions, and that caused most of the misses; tuning it is
+the next step. Details are in [report section 9](report/REPORT.md#9-live-run-results).
+
 ## Scenario and acceptance criteria
 
 Harbor Goods, a fictional mid-size retailer, has a store-support team that answers staff questions about returns,
@@ -187,7 +205,7 @@ set timeouts. Pull request jobs get no cloud access.
 
 - **Simulated:** no AWS account backs this repo's CI. Offline retrieval uses hashed-feature embedding fixtures, not
   Titan vectors, and the answer pipeline uses an extractive stand-in model; they gate regressions, and
-  `make test-live` measures the deployed stack. Live results are added to the report after the first run.
+  `make test-live` measures the deployed stack; the first live results are in the Results section above.
 - **Out of scope:** the staff portal that signs requests, the corporate network connection to the VPC, identity
   federation for staff, and the document management system that uploads policies.
 - **A real engagement adds:** the client's real documents and a golden set written with the store-support team,
