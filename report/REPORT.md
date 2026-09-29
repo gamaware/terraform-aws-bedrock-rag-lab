@@ -23,7 +23,7 @@ Results on the 40-question golden set, offline:
 - **Vector store:** S3 Vectors costs cents a month for this corpus; the OpenSearch Serverless floor starts at about
   USD 175 a month.
 
-What is still open: the live run on 2026-09-28 (section 9) confirmed retrieval (recall@5 1.000, MRR 0.978 with Titan
+What is still open: the live run (section 9) confirmed retrieval (recall@5 1.000, MRR 0.978 with Titan
 embeddings) and refusal of every unanswerable question, but missed three gates: citation precision 0.691, answered
 with a relevant citation 0.794, and answer contains the expected facts 0.676 (gate 0.8). Six answerable questions were
 blocked by the guardrail. Tuning the guardrail's grounding threshold and the relevance cut-off (`min_score`) comes
@@ -207,7 +207,7 @@ destroys everything. See [docs/live-test.md](../docs/live-test.md).
 
 ## 9. Live run results
 
-> **Live run** in the maintainer's sandbox AWS account, us-east-1, on 2026-09-28. The stack was created, tested and
+> **Live run** in the maintainer's sandbox AWS account, us-east-1. The stack was created, tested and
 > destroyed in one run. Identifiers and ARNs are omitted.
 
 The plan pre-flight passed for all three stacks: nothing public, and every taggable resource tagged with the run. The
