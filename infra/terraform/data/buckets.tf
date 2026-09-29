@@ -4,11 +4,6 @@
 #   access_logs     - S3 server access logs of the other two (SSE-S3: S3 log delivery cannot write SSE-KMS)
 
 locals {
-  buckets = {
-    policies        = aws_s3_bucket.policies
-    invocation_logs = aws_s3_bucket.invocation_logs
-    access_logs     = aws_s3_bucket.access_logs
-  }
   logged_buckets = {
     policies        = aws_s3_bucket.policies
     invocation_logs = aws_s3_bucket.invocation_logs
@@ -221,68 +216,119 @@ resource "aws_s3_bucket_notification" "policies" {
   eventbridge = true
 }
 
-locals {
-  tls_only = {
-    for key, bucket in local.buckets : key => {
-      Sid       = "TlsOnly"
-      Effect    = "Deny"
-      Principal = "*"
-      Action    = "s3:*"
-      Resource  = [bucket.arn, "${bucket.arn}/*"]
-      Condition = { Bool = { "aws:SecureTransport" = "false" } }
+# Bucket policies are built with aws_iam_policy_document, not jsonencode: in a fresh plan the bucket ARNs are unknown,
+# and the data source keeps each statement's effect, principals and conditions readable in the plan, so the live-test
+# pre-flight (scripts/check_live_plan.py) can check them before apply.
+data "aws_iam_policy_document" "policies" {
+  statement {
+    sid       = "TlsOnly"
+    effect    = "Deny"
+    actions   = ["s3:*"]
+    resources = [aws_s3_bucket.policies.arn, "${aws_s3_bucket.policies.arn}/*"]
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
     }
   }
 }
 
 resource "aws_s3_bucket_policy" "policies" {
-  bucket = aws_s3_bucket.policies.id
-  policy = jsonencode({
-    Version   = "2012-10-17"
-    Statement = [local.tls_only.policies]
-  })
+  bucket     = aws_s3_bucket.policies.id
+  policy     = data.aws_iam_policy_document.policies.json
   depends_on = [aws_s3_bucket_public_access_block.policies, aws_s3_bucket_public_access_block.invocation_logs, aws_s3_bucket_public_access_block.access_logs]
+}
+
+data "aws_iam_policy_document" "invocation_logs" {
+  statement {
+    sid       = "TlsOnly"
+    effect    = "Deny"
+    actions   = ["s3:*"]
+    resources = [aws_s3_bucket.invocation_logs.arn, "${aws_s3_bucket.invocation_logs.arn}/*"]
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+
+  statement {
+    sid       = "BedrockInvocationLogDelivery"
+    effect    = "Allow"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.invocation_logs.arn}/${local.invocation_log_prefix}/AWSLogs/${local.account_id}/BedrockModelInvocationLogs/*"]
+    principals {
+      type        = "Service"
+      identifiers = ["bedrock.amazonaws.com"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [local.account_id]
+    }
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = ["arn:${local.partition}:bedrock:${local.region}:${local.account_id}:*"]
+    }
+  }
 }
 
 resource "aws_s3_bucket_policy" "invocation_logs" {
-  bucket = aws_s3_bucket.invocation_logs.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      local.tls_only.invocation_logs,
-      {
-        Sid       = "BedrockInvocationLogDelivery"
-        Effect    = "Allow"
-        Principal = { Service = "bedrock.amazonaws.com" }
-        Action    = "s3:PutObject"
-        Resource  = "${aws_s3_bucket.invocation_logs.arn}/${local.invocation_log_prefix}/AWSLogs/${local.account_id}/BedrockModelInvocationLogs/*"
-        Condition = {
-          StringEquals = { "aws:SourceAccount" = local.account_id }
-          ArnLike      = { "aws:SourceArn" = "arn:${local.partition}:bedrock:${local.region}:${local.account_id}:*" }
-        }
-      },
-    ]
-  })
+  bucket     = aws_s3_bucket.invocation_logs.id
+  policy     = data.aws_iam_policy_document.invocation_logs.json
   depends_on = [aws_s3_bucket_public_access_block.policies, aws_s3_bucket_public_access_block.invocation_logs, aws_s3_bucket_public_access_block.access_logs]
 }
 
+data "aws_iam_policy_document" "access_logs" {
+  statement {
+    sid       = "TlsOnly"
+    effect    = "Deny"
+    actions   = ["s3:*"]
+    resources = [aws_s3_bucket.access_logs.arn, "${aws_s3_bucket.access_logs.arn}/*"]
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+
+  statement {
+    sid       = "S3ServerAccessLogs"
+    effect    = "Allow"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.access_logs.arn}/*"]
+    principals {
+      type        = "Service"
+      identifiers = ["logging.s3.amazonaws.com"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [local.account_id]
+    }
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = [aws_s3_bucket.policies.arn, aws_s3_bucket.invocation_logs.arn]
+    }
+  }
+}
+
 resource "aws_s3_bucket_policy" "access_logs" {
-  bucket = aws_s3_bucket.access_logs.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      local.tls_only.access_logs,
-      {
-        Sid       = "S3ServerAccessLogs"
-        Effect    = "Allow"
-        Principal = { Service = "logging.s3.amazonaws.com" }
-        Action    = "s3:PutObject"
-        Resource  = "${aws_s3_bucket.access_logs.arn}/*"
-        Condition = {
-          StringEquals = { "aws:SourceAccount" = local.account_id }
-          ArnLike      = { "aws:SourceArn" = [aws_s3_bucket.policies.arn, aws_s3_bucket.invocation_logs.arn] }
-        }
-      },
-    ]
-  })
+  bucket     = aws_s3_bucket.access_logs.id
+  policy     = data.aws_iam_policy_document.access_logs.json
   depends_on = [aws_s3_bucket_public_access_block.policies, aws_s3_bucket_public_access_block.invocation_logs, aws_s3_bucket_public_access_block.access_logs]
 }

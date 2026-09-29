@@ -19,9 +19,12 @@ guardrail covers these, but only for text that passes through `Converse` or `App
 - Terraform builds the guardrail from that file and publishes a version whenever it changes; the api stack refuses
   `DRAFT` and pins the published version.
 - The same file has a `prefilter` list of regular expressions. Terraform passes it to the ask function, which redacts
-  the question before `Retrieve` and before any log line, with the guardrail's `{TYPE}` placeholder style.
+  the question before `Retrieve`, with the guardrail's `{TYPE}` placeholder style. It also redacts citation excerpts,
+  which are source text the guardrail does not assess.
+- Logs never carry the question text, redacted or not: the `ask` line has a SHA-256 prefix, the length and the PII
+  types found.
 - Entities that a regular expression cannot catch (names, addresses) are listed in `prefilter_exempt` with the reason;
-  the guardrail masks them in the answer path.
+  the guardrail screens the question (qualified `guard_content`) and masks them in the answer.
 - Card, Social Security and bank account numbers are blocked rather than masked.
 
 ## Consequences
@@ -42,7 +45,10 @@ guardrail covers these, but only for text that passes through `Converse` or `App
   clean look-alikes.
 - `infra/terraform/knowledge-base/tests/knowledge_base.tftest.hcl` and `infra/terraform/api/tests/api.tftest.hcl`: the
   guardrail is built from the file; the function receives the pre-filter from the file and the pinned version.
-- `make test-live`: the 18 red-team cases through `ApplyGuardrail`.
+- `tests/test_handler.py`: a question with a name and a street address leaves no trace in the logs, answered or
+  refused for lack of context.
+- `make test-live`: the 18 red-team cases through `ApplyGuardrail`, in the block shape and qualifiers of the
+  production `Converse` request.
 
 ## Notes
 

@@ -7,6 +7,8 @@ Rules the tests hold this module to:
 - An answer without at least one valid citation is replaced by the refusal: the assistant never states a policy it
   cannot point to.
 - A guardrail intervention returns the guardrail's message and its findings, never the blocked text.
+- Citation excerpts are source text the guardrail never assessed (the sources are grounding-only), so they go through
+  the same PII pre-filter as the question before they leave the function.
 - Throttling and transient errors are retried with backoff; the retry policy lives here, not in botocore.
 """
 
@@ -22,7 +24,7 @@ from typing import Any
 from botocore.exceptions import ClientError
 
 from harbor_rag.config import Settings
-from harbor_rag.pii import redact
+from harbor_rag.pii import PiiPattern, redact
 from harbor_rag.port import BedrockPort
 from harbor_rag.prompt import NO_ANSWER, Source, build_converse_request, fit_to_budget, select_sources
 
@@ -103,7 +105,11 @@ def guardrail_verdict(response: Mapping[str, Any]) -> dict[str, Any]:
     return {"action": "INTERVENED" if intervened else "NONE", "findings": sorted(set(findings))}
 
 
-def map_citations(text: str, sources: list[Source]) -> list[dict[str, Any]]:
+def map_citations(text: str, sources: list[Source], patterns: tuple[PiiPattern, ...]) -> list[dict[str, Any]]:
+    """The cited sources, each with a short excerpt redacted by the PII pre-filter.
+
+    The excerpt is redacted before it is cut, so a value split by the cut cannot slip past a pattern.
+    """
     by_index = {s.index: s for s in sources}
     cited: list[int] = []
     for match in CITATION.finditer(text):
@@ -117,7 +123,7 @@ def map_citations(text: str, sources: list[Source]) -> list[dict[str, Any]]:
             "title": by_index[i].title,
             "uri": by_index[i].uri,
             "doc_type": by_index[i].doc_type,
-            "excerpt": by_index[i].text[:EXCERPT_CHARS],
+            "excerpt": redact(by_index[i].text, patterns).text[:EXCERPT_CHARS],
         }
         for i in cited
     ]
@@ -185,7 +191,7 @@ def answer_question(
         return Answer(
             REFUSAL, [], verdict, refused=True, reason="model_declined", usage=usage, redacted=list(redaction.found)
         )
-    citations = map_citations(text, sources)
+    citations = map_citations(text, sources, settings.pii_patterns)
     if not citations:
         return Answer(
             REFUSAL, [], verdict, refused=True, reason="no_citation", usage=usage, redacted=list(redaction.found)

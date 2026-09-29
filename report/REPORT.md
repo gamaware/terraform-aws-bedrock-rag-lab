@@ -120,9 +120,10 @@ Offline evidence (`tests/test_guardrail_policy.py`, `tests/test_pii.py`, mocked 
   grounding threshold is at least 0.7, and the function can only run a published version, never the draft.
 
 The pre-filter exists because the guardrail only sees what goes through `Converse`: the question also goes to
-`Retrieve` and to the function's logs, so it is redacted first
-([ADR 0005](../docs/adr/0005-guardrail-and-pii-prefilter.md)). The live run sends the 18 red-team cases through
-`ApplyGuardrail` and fails on any unexpected verdict.
+`Retrieve`, so it is redacted first, and citation excerpts are redacted the same way
+([ADR 0005](../docs/adr/0005-guardrail-and-pii-prefilter.md)). The logs never hold the question text, only a hash,
+its length and the PII types found. The live run sends the 18 red-team cases through `ApplyGuardrail` in the block
+shape of the production request and fails on any unexpected verdict.
 
 ## 5. Cost per question
 
@@ -186,7 +187,7 @@ knowledge base, and a per-vector metadata limit. At this volume none of them is 
 | Relevance cut-off tuned on proxy scores | High | Too many or too few refusals | `min_score` and `relative_floor` are Terraform variables; the live run prints every score | Calibrate with `make test-live`, record the live gate results here |
 | A policy changes and the index lags | Medium | Answers quote the old policy | Upload triggers ingestion; failed triggers alarm through a dead-letter queue | Add a nightly full sync if uploads are batched |
 | Guardrail false positives on real questions | Medium | Staff get refusals | Red-team set includes clean look-alikes (order numbers, SKUs, prices) | Review interventions on the dashboard for the first two weeks |
-| Staff paste PII the patterns miss (names, addresses) | Medium | PII in the Retrieve query and logs | Guardrail masks names and addresses in the answer path; logs keep the redacted question only | Add patterns from the first month of intervention findings |
+| Staff paste PII the patterns miss (names, addresses) | Medium | PII in the Retrieve query and logs | Guardrail screens the question and masks names and addresses in the answer; logs keep a hash of the question, never its text | Add patterns from the first month of intervention findings |
 | Cost growth from volume | Low | Budget alerts | Reserved concurrency, stage throttling, a monthly budget with forecast alert | Revisit the model choice at 100,000 questions a month |
 
 ## 8. How to reproduce

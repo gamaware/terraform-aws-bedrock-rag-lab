@@ -6,6 +6,8 @@ from harbor_rag.prompt import (
     build_converse_request,
     estimate_tokens,
     fit_to_budget,
+    guarded_text_blocks,
+    render_sources,
     select_sources,
 )
 from tests.fakes import fixture
@@ -60,7 +62,7 @@ def test_budget_truncates_a_single_oversized_source() -> None:
     assert estimate_tokens(kept[0].text) <= 100
 
 
-def test_converse_request_attaches_the_guardrail_and_grounding_qualifiers() -> None:
+def test_converse_request_has_the_exact_guarded_shape() -> None:
     sources = select_sources(results(), max_sources=3, min_score=0.35, relative_floor=0.8)
     request = build_converse_request(
         question="How long is the return window?",
@@ -70,10 +72,36 @@ def test_converse_request_attaches_the_guardrail_and_grounding_qualifiers() -> N
         guardrail_version="3",
         max_output_tokens=400,
     )
-    assert request["guardrailConfig"] == {"guardrailIdentifier": "g", "guardrailVersion": "3", "trace": "enabled"}
-    blocks = request["messages"][0]["content"]
-    assert blocks[0]["guardContent"]["text"]["qualifiers"] == ["grounding_source"]
-    assert blocks[0]["guardContent"]["text"]["text"].startswith("[1] Standard return window")
-    assert blocks[1]["guardContent"]["text"] == {"text": "How long is the return window?", "qualifiers": ["query"]}
-    assert request["system"] == [{"text": SYSTEM_PROMPT}]
-    assert request["inferenceConfig"]["temperature"] == 0.0
+    assert request == {
+        "modelId": "m",
+        "system": [{"text": SYSTEM_PROMPT}],
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"guardContent": {"text": {"text": render_sources(sources), "qualifiers": ["grounding_source"]}}},
+                    {
+                        "guardContent": {
+                            "text": {"text": "How long is the return window?", "qualifiers": ["query", "guard_content"]}
+                        }
+                    },
+                ],
+            }
+        ],
+        "inferenceConfig": {"maxTokens": 400, "temperature": 0.0},
+        "guardrailConfig": {"guardrailIdentifier": "g", "guardrailVersion": "3", "trace": "enabled"},
+    }
+    assert render_sources(sources).startswith("[1] Standard return window")
+
+
+def test_the_question_is_evaluated_by_every_guardrail_policy() -> None:
+    """`query` alone would feed only the grounding check: prompt attacks, denied topics and PII would never see it."""
+    question_block = guarded_text_blocks(question="q", context="c")[1]["text"]
+    assert "guard_content" in question_block["qualifiers"]
+    assert "query" in question_block["qualifiers"]
+
+
+def test_sources_are_grounding_only() -> None:
+    assert guarded_text_blocks(question="q", context="c")[0] == {
+        "text": {"text": "c", "qualifiers": ["grounding_source"]}
+    }

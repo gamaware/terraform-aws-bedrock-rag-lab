@@ -55,10 +55,14 @@ sees. The offline values do not carry over to Titan embeddings.
 ## Investigate a bad answer
 
 1. Find the request in the function's log group (`/aws/lambda/<name>-ask`) by time or request ID. The `ask` log line
-   has the redacted question, the reason (`answered`, `no_context`, `no_citation`, `model_declined`, `guardrail`),
-   the cited document URIs and the guardrail findings.
-2. Reproduce the retrieval: `aws bedrock-agent-runtime retrieve --knowledge-base-id KB_ID --retrieval-query
-   text="<redacted question>"`. Check whether the right document is in the results and what its score is.
+   identifies the question by `question_sha256` (the first 16 hex characters of the SHA-256 of the stripped
+   question), `question_chars` and the PII types the pre-filter found (`redacted`); it never holds the question text.
+   It also has the reason (`answered`, `no_context`, `no_citation`, `model_declined`, `guardrail`), the cited
+   document URIs and the guardrail findings.
+2. Get the question from whoever reported it and confirm it matches the hash
+   (`printf '%s' "<question>" | shasum -a 256 | cut -c1-16`). Remove any customer data, then reproduce the retrieval:
+   `aws bedrock-agent-runtime retrieve --knowledge-base-id KB_ID --retrieval-query text="<question>"`. Check whether
+   the right document is in the results and what its score is.
 3. Read the full model exchange in the invocation-log bucket (`bedrock/AWSLogs/...`) if invocation logging is on.
 4. Classify and fix:
    - right document missing from the results: add the question to the golden set, then fix the document or chunking;

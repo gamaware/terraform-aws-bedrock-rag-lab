@@ -7,7 +7,7 @@ reviews:
     - path: "src/harbor_rag/**/*.py"
       instructions: >-
         Lambda code: standard library plus boto3 from the runtime only. The question is redacted before Retrieve and
-        before any log line. No answer without at least one valid citation. Errors returned to callers must not leak
+        never logged as text (hash, length and PII types only). No answer without at least one valid citation. Errors returned to callers must not leak
         internal details. Every behavior change needs a unit test with the FakeBedrock port.
     - path: "src/harbor_eval/**/*.py"
       instructions: >-

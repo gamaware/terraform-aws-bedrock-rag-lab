@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 
 import pytest
@@ -27,7 +28,10 @@ def test_answer_is_returned_as_json(settings: Settings, capsys: pytest.CaptureFi
     logs = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
     assert logs[0]["event"] == "ask"
     assert "jane@example.com" not in json.dumps(logs)
-    assert logs[0]["question"] == "Return window for {EMAIL}?"
+    assert "question" not in logs[0]
+    assert logs[0]["question_sha256"] == hashlib.sha256(b"Return window for jane@example.com?").hexdigest()[:16]
+    assert logs[0]["question_chars"] == len("Return window for jane@example.com?")
+    assert logs[0]["redacted"] == ["EMAIL"]
     metrics = logs[1]
     assert metrics["_aws"]["CloudWatchMetrics"][0]["Namespace"] == handler.METRIC_NAMESPACE
     assert (metrics["InputTokens"], metrics["OutputTokens"], metrics["Refusals"]) == (412, 58, 0)
@@ -82,3 +86,34 @@ def test_lambda_handler_wires_env_and_port(monkeypatch: pytest.MonkeyPatch, sett
 
     response = handler.lambda_handler(event({"question": "Return window?"}), Context())
     assert response["statusCode"] == 200
+
+
+NAME_AND_ADDRESS = "Customer Jane Doe at 123 Main Street wants to return a lamp, how long does she have?"
+
+
+@pytest.mark.parametrize(
+    ("retrieved", "converse", "reason"),
+    [
+        ("retrieve_returns", ["converse_answer"], "answered"),
+        ("retrieve_empty", [], "no_context"),
+    ],
+)
+def test_names_and_addresses_never_reach_the_logs(
+    settings: Settings, capsys: pytest.CaptureFixture[str], retrieved: str, converse: list[str], reason: str
+) -> None:
+    """The regex pre-filter cannot catch a name or a street address, so no log line carries question text at all."""
+    port = FakeBedrock([fixture(retrieved)], [fixture(name) for name in converse])
+    status, body, _ = call(port, settings, {"question": NAME_AND_ADDRESS})
+    assert (status, body["reason"]) == (200, reason)
+    out = capsys.readouterr().out
+    for fragment in ("Jane", "Doe", "123 Main", "Main Street", "lamp"):
+        assert fragment not in out
+    ask_line = json.loads(out.splitlines()[0])
+    assert ask_line["event"] == "ask"
+    assert ask_line["question_chars"] == len(NAME_AND_ADDRESS)
+    assert ask_line["redacted"] == []
+
+
+def test_error_paths_do_not_log_the_question(settings: Settings, capsys: pytest.CaptureFixture[str]) -> None:
+    call(FakeBedrock([client_error("AccessDeniedException", "Retrieve")]), settings, {"question": NAME_AND_ADDRESS})
+    assert "Jane" not in capsys.readouterr().out

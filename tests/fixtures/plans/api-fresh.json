@@ -1,0 +1,3962 @@
+{
+ "configuration": {
+  "root_module": {
+   "outputs": {
+    "api_id": {
+     "description": "REST API ID.",
+     "expression": {
+      "references": [
+       "aws_api_gateway_rest_api.this.id",
+       "aws_api_gateway_rest_api.this"
+      ]
+     }
+    },
+    "ask_function_name": {
+     "description": "Ask function name (the live test invokes it directly with the same event API Gateway sends).",
+     "expression": {
+      "references": [
+       "aws_lambda_function.ask.function_name",
+       "aws_lambda_function.ask"
+      ]
+     }
+    },
+    "ask_url": {
+     "description": "POST URL, resolvable only inside the VPC (private DNS on the execute-api endpoint).",
+     "expression": {
+      "references": [
+       "aws_api_gateway_rest_api.this.id",
+       "aws_api_gateway_rest_api.this",
+       "local.region",
+       "aws_api_gateway_stage.v1.stage_name",
+       "aws_api_gateway_stage.v1"
+      ]
+     }
+    },
+    "inference_profile_arn": {
+     "description": "Application inference profile the function calls; its tags drive cost allocation.",
+     "expression": {
+      "references": [
+       "aws_bedrock_inference_profile.answers.arn",
+       "aws_bedrock_inference_profile.answers"
+      ]
+     }
+    },
+    "vpc_id": {
+     "description": "Private VPC that holds the function and the endpoints.",
+     "expression": {
+      "references": [
+       "aws_vpc.this.id",
+       "aws_vpc.this"
+      ]
+     }
+    }
+   },
+   "resources": [
+    {
+     "address": "aws_api_gateway_account.this",
+     "count_expression": {
+      "references": [
+       "var.manage_api_gateway_account"
+      ]
+     },
+     "expressions": {
+      "cloudwatch_role_arn": {
+       "references": [
+        "aws_iam_role.api_gateway_logs[0].arn",
+        "aws_iam_role.api_gateway_logs[0]",
+        "aws_iam_role.api_gateway_logs"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "this",
+     "provider_config_key": "aws",
+     "type": "aws_api_gateway_account"
+    },
+    {
+     "address": "aws_api_gateway_deployment.this",
+     "expressions": {
+      "rest_api_id": {
+       "references": [
+        "aws_api_gateway_rest_api.this.id",
+        "aws_api_gateway_rest_api.this"
+       ]
+      },
+      "triggers": {
+       "references": [
+        "aws_api_gateway_resource.ask.id",
+        "aws_api_gateway_resource.ask",
+        "aws_api_gateway_method.ask",
+        "aws_api_gateway_integration.ask",
+        "aws_api_gateway_model.ask.schema",
+        "aws_api_gateway_model.ask",
+        "aws_api_gateway_rest_api_policy.this.policy",
+        "aws_api_gateway_rest_api_policy.this"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "this",
+     "provider_config_key": "aws",
+     "type": "aws_api_gateway_deployment"
+    },
+    {
+     "address": "aws_api_gateway_integration.ask",
+     "expressions": {
+      "http_method": {
+       "references": [
+        "aws_api_gateway_method.ask.http_method",
+        "aws_api_gateway_method.ask"
+       ]
+      },
+      "integration_http_method": {
+       "constant_value": "POST"
+      },
+      "resource_id": {
+       "references": [
+        "aws_api_gateway_resource.ask.id",
+        "aws_api_gateway_resource.ask"
+       ]
+      },
+      "rest_api_id": {
+       "references": [
+        "aws_api_gateway_rest_api.this.id",
+        "aws_api_gateway_rest_api.this"
+       ]
+      },
+      "timeout_milliseconds": {
+       "constant_value": 29000
+      },
+      "type": {
+       "constant_value": "AWS_PROXY"
+      },
+      "uri": {
+       "references": [
+        "aws_lambda_function.ask.invoke_arn",
+        "aws_lambda_function.ask"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "ask",
+     "provider_config_key": "aws",
+     "type": "aws_api_gateway_integration"
+    },
+    {
+     "address": "aws_api_gateway_method.ask",
+     "expressions": {
+      "authorization": {
+       "constant_value": "AWS_IAM"
+      },
+      "http_method": {
+       "constant_value": "POST"
+      },
+      "request_models": {
+       "references": [
+        "aws_api_gateway_model.ask.name",
+        "aws_api_gateway_model.ask"
+       ]
+      },
+      "request_validator_id": {
+       "references": [
+        "aws_api_gateway_request_validator.body.id",
+        "aws_api_gateway_request_validator.body"
+       ]
+      },
+      "resource_id": {
+       "references": [
+        "aws_api_gateway_resource.ask.id",
+        "aws_api_gateway_resource.ask"
+       ]
+      },
+      "rest_api_id": {
+       "references": [
+        "aws_api_gateway_rest_api.this.id",
+        "aws_api_gateway_rest_api.this"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "ask",
+     "provider_config_key": "aws",
+     "type": "aws_api_gateway_method"
+    },
+    {
+     "address": "aws_api_gateway_method_settings.all",
+     "expressions": {
+      "method_path": {
+       "constant_value": "*/*"
+      },
+      "rest_api_id": {
+       "references": [
+        "aws_api_gateway_rest_api.this.id",
+        "aws_api_gateway_rest_api.this"
+       ]
+      },
+      "settings": [
+       {
+        "caching_enabled": {
+         "constant_value": false
+        },
+        "data_trace_enabled": {
+         "constant_value": false
+        },
+        "logging_level": {
+         "constant_value": "INFO"
+        },
+        "metrics_enabled": {
+         "constant_value": true
+        },
+        "throttling_burst_limit": {
+         "references": [
+          "var.api_throttle.burst_limit",
+          "var.api_throttle"
+         ]
+        },
+        "throttling_rate_limit": {
+         "references": [
+          "var.api_throttle.rate_limit",
+          "var.api_throttle"
+         ]
+        }
+       }
+      ],
+      "stage_name": {
+       "references": [
+        "aws_api_gateway_stage.v1.stage_name",
+        "aws_api_gateway_stage.v1"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "all",
+     "provider_config_key": "aws",
+     "type": "aws_api_gateway_method_settings"
+    },
+    {
+     "address": "aws_api_gateway_model.ask",
+     "expressions": {
+      "content_type": {
+       "constant_value": "application/json"
+      },
+      "name": {
+       "constant_value": "AskRequest"
+      },
+      "rest_api_id": {
+       "references": [
+        "aws_api_gateway_rest_api.this.id",
+        "aws_api_gateway_rest_api.this"
+       ]
+      },
+      "schema": {}
+     },
+     "mode": "managed",
+     "name": "ask",
+     "provider_config_key": "aws",
+     "type": "aws_api_gateway_model"
+    },
+    {
+     "address": "aws_api_gateway_request_validator.body",
+     "expressions": {
+      "name": {
+       "constant_value": "body"
+      },
+      "rest_api_id": {
+       "references": [
+        "aws_api_gateway_rest_api.this.id",
+        "aws_api_gateway_rest_api.this"
+       ]
+      },
+      "validate_request_body": {
+       "constant_value": true
+      }
+     },
+     "mode": "managed",
+     "name": "body",
+     "provider_config_key": "aws",
+     "type": "aws_api_gateway_request_validator"
+    },
+    {
+     "address": "aws_api_gateway_resource.ask",
+     "expressions": {
+      "parent_id": {
+       "references": [
+        "aws_api_gateway_rest_api.this.root_resource_id",
+        "aws_api_gateway_rest_api.this"
+       ]
+      },
+      "path_part": {
+       "constant_value": "ask"
+      },
+      "rest_api_id": {
+       "references": [
+        "aws_api_gateway_rest_api.this.id",
+        "aws_api_gateway_rest_api.this"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "ask",
+     "provider_config_key": "aws",
+     "type": "aws_api_gateway_resource"
+    },
+    {
+     "address": "aws_api_gateway_rest_api.this",
+     "expressions": {
+      "description": {
+       "constant_value": "Harbor Goods policy assistant (private)"
+      },
+      "endpoint_configuration": [
+       {
+        "types": {
+         "constant_value": [
+          "PRIVATE"
+         ]
+        },
+        "vpc_endpoint_ids": {
+         "references": [
+          "aws_vpc_endpoint.interface[\"execute-api\"].id",
+          "aws_vpc_endpoint.interface[\"execute-api\"]",
+          "aws_vpc_endpoint.interface"
+         ]
+        }
+       }
+      ],
+      "name": {
+       "references": [
+        "var.name"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "this",
+     "provider_config_key": "aws",
+     "type": "aws_api_gateway_rest_api"
+    },
+    {
+     "address": "aws_api_gateway_rest_api_policy.this",
+     "expressions": {
+      "policy": {
+       "references": [
+        "data.aws_iam_policy_document.api.json",
+        "data.aws_iam_policy_document.api"
+       ]
+      },
+      "rest_api_id": {
+       "references": [
+        "aws_api_gateway_rest_api.this.id",
+        "aws_api_gateway_rest_api.this"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "this",
+     "provider_config_key": "aws",
+     "type": "aws_api_gateway_rest_api_policy"
+    },
+    {
+     "address": "aws_api_gateway_stage.v1",
+     "depends_on": [
+      "aws_api_gateway_account.this"
+     ],
+     "expressions": {
+      "access_log_settings": [
+       {
+        "destination_arn": {
+         "references": [
+          "aws_cloudwatch_log_group.api_access.arn",
+          "aws_cloudwatch_log_group.api_access"
+         ]
+        },
+        "format": {}
+       }
+      ],
+      "deployment_id": {
+       "references": [
+        "aws_api_gateway_deployment.this.id",
+        "aws_api_gateway_deployment.this"
+       ]
+      },
+      "rest_api_id": {
+       "references": [
+        "aws_api_gateway_rest_api.this.id",
+        "aws_api_gateway_rest_api.this"
+       ]
+      },
+      "stage_name": {
+       "constant_value": "v1"
+      },
+      "xray_tracing_enabled": {
+       "constant_value": true
+      }
+     },
+     "mode": "managed",
+     "name": "v1",
+     "provider_config_key": "aws",
+     "type": "aws_api_gateway_stage"
+    },
+    {
+     "address": "aws_bedrock_inference_profile.answers",
+     "expressions": {
+      "description": {
+       "references": [
+        "var.answer_model_id"
+       ]
+      },
+      "model_source": [
+       {
+        "copy_from": {
+         "references": [
+          "local.model_source_arn"
+         ]
+        }
+       }
+      ],
+      "name": {
+       "references": [
+        "var.name"
+       ]
+      },
+      "tags": {
+       "references": [
+        "var.name"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "answers",
+     "provider_config_key": "aws",
+     "type": "aws_bedrock_inference_profile"
+    },
+    {
+     "address": "aws_budgets_budget.monthly",
+     "expressions": {
+      "budget_type": {
+       "constant_value": "COST"
+      },
+      "cost_filter": [
+       {
+        "name": {
+         "constant_value": "TagKeyValue"
+        },
+        "values": {
+         "references": [
+          "var.name"
+         ]
+        }
+       }
+      ],
+      "limit_amount": {
+       "references": [
+        "var.monthly_budget_usd"
+       ]
+      },
+      "limit_unit": {
+       "constant_value": "USD"
+      },
+      "name": {
+       "references": [
+        "var.name"
+       ]
+      },
+      "notification": [
+       {
+        "comparison_operator": {
+         "constant_value": "GREATER_THAN"
+        },
+        "notification_type": {
+         "constant_value": "FORECASTED"
+        },
+        "subscriber_sns_topic_arns": {
+         "references": [
+          "var.alarm_topic_arn"
+         ]
+        },
+        "threshold": {
+         "constant_value": 80
+        },
+        "threshold_type": {
+         "constant_value": "PERCENTAGE"
+        }
+       },
+       {
+        "comparison_operator": {
+         "constant_value": "GREATER_THAN"
+        },
+        "notification_type": {
+         "constant_value": "ACTUAL"
+        },
+        "subscriber_sns_topic_arns": {
+         "references": [
+          "var.alarm_topic_arn"
+         ]
+        },
+        "threshold": {
+         "constant_value": 100
+        },
+        "threshold_type": {
+         "constant_value": "PERCENTAGE"
+        }
+       }
+      ],
+      "time_unit": {
+       "constant_value": "MONTHLY"
+      }
+     },
+     "mode": "managed",
+     "name": "monthly",
+     "provider_config_key": "aws",
+     "type": "aws_budgets_budget"
+    },
+    {
+     "address": "aws_cloudwatch_dashboard.this",
+     "expressions": {
+      "dashboard_body": {
+       "references": [
+        "local.region",
+        "local.metric_namespace",
+        "local.metric_namespace",
+        "local.region",
+        "local.metric_namespace",
+        "local.metric_namespace",
+        "local.region",
+        "local.metric_namespace",
+        "local.metric_namespace",
+        "local.region",
+        "aws_lambda_function.ask.function_name",
+        "aws_lambda_function.ask",
+        "aws_lambda_function.ask.function_name",
+        "aws_lambda_function.ask",
+        "aws_api_gateway_rest_api.this.name",
+        "aws_api_gateway_rest_api.this",
+        "aws_api_gateway_rest_api.this.name",
+        "aws_api_gateway_rest_api.this"
+       ]
+      },
+      "dashboard_name": {
+       "references": [
+        "var.name"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "this",
+     "provider_config_key": "aws",
+     "type": "aws_cloudwatch_dashboard"
+    },
+    {
+     "address": "aws_cloudwatch_log_group.api_access",
+     "expressions": {
+      "kms_key_id": {
+       "references": [
+        "aws_kms_key.api.arn",
+        "aws_kms_key.api"
+       ]
+      },
+      "name": {
+       "references": [
+        "var.name"
+       ]
+      },
+      "retention_in_days": {
+       "references": [
+        "var.log_retention_days"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "api_access",
+     "provider_config_key": "aws",
+     "type": "aws_cloudwatch_log_group"
+    },
+    {
+     "address": "aws_cloudwatch_log_group.ask",
+     "expressions": {
+      "kms_key_id": {
+       "references": [
+        "aws_kms_key.api.arn",
+        "aws_kms_key.api"
+       ]
+      },
+      "name": {
+       "references": [
+        "var.name"
+       ]
+      },
+      "retention_in_days": {
+       "references": [
+        "var.log_retention_days"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "ask",
+     "provider_config_key": "aws",
+     "type": "aws_cloudwatch_log_group"
+    },
+    {
+     "address": "aws_cloudwatch_log_group.flow_logs",
+     "expressions": {
+      "kms_key_id": {
+       "references": [
+        "aws_kms_key.api.arn",
+        "aws_kms_key.api"
+       ]
+      },
+      "name": {
+       "references": [
+        "var.name"
+       ]
+      },
+      "retention_in_days": {
+       "references": [
+        "var.log_retention_days"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "flow_logs",
+     "provider_config_key": "aws",
+     "type": "aws_cloudwatch_log_group"
+    },
+    {
+     "address": "aws_cloudwatch_metric_alarm.this",
+     "expressions": {
+      "alarm_actions": {
+       "references": [
+        "var.alarm_topic_arn"
+       ]
+      },
+      "alarm_description": {
+       "references": [
+        "each.value.description",
+        "each.value"
+       ]
+      },
+      "alarm_name": {
+       "references": [
+        "var.name",
+        "each.key"
+       ]
+      },
+      "comparison_operator": {
+       "constant_value": "GreaterThanThreshold"
+      },
+      "dimensions": {
+       "references": [
+        "each.value.dimensions",
+        "each.value"
+       ]
+      },
+      "evaluation_periods": {
+       "constant_value": 1
+      },
+      "metric_name": {
+       "references": [
+        "each.value.metric",
+        "each.value"
+       ]
+      },
+      "namespace": {
+       "references": [
+        "each.value.namespace",
+        "each.value"
+       ]
+      },
+      "period": {
+       "constant_value": 300
+      },
+      "statistic": {
+       "constant_value": "Sum"
+      },
+      "threshold": {
+       "references": [
+        "each.value.threshold",
+        "each.value"
+       ]
+      },
+      "treat_missing_data": {
+       "constant_value": "notBreaching"
+      }
+     },
+     "for_each_expression": {
+      "references": [
+       "local.alarms"
+      ]
+     },
+     "mode": "managed",
+     "name": "this",
+     "provider_config_key": "aws",
+     "type": "aws_cloudwatch_metric_alarm"
+    },
+    {
+     "address": "aws_default_security_group.this",
+     "expressions": {
+      "tags": {
+       "references": [
+        "var.name"
+       ]
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.this.id",
+        "aws_vpc.this"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "this",
+     "provider_config_key": "aws",
+     "type": "aws_default_security_group"
+    },
+    {
+     "address": "aws_flow_log.this",
+     "expressions": {
+      "iam_role_arn": {
+       "references": [
+        "aws_iam_role.flow_logs.arn",
+        "aws_iam_role.flow_logs"
+       ]
+      },
+      "log_destination": {
+       "references": [
+        "aws_cloudwatch_log_group.flow_logs.arn",
+        "aws_cloudwatch_log_group.flow_logs"
+       ]
+      },
+      "traffic_type": {
+       "constant_value": "ALL"
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.this.id",
+        "aws_vpc.this"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "this",
+     "provider_config_key": "aws",
+     "type": "aws_flow_log"
+    },
+    {
+     "address": "aws_iam_role.api_gateway_logs",
+     "count_expression": {
+      "references": [
+       "var.manage_api_gateway_account"
+      ]
+     },
+     "expressions": {
+      "assume_role_policy": {
+       "references": [
+        "local.account_id"
+       ]
+      },
+      "name": {
+       "references": [
+        "var.name"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "api_gateway_logs",
+     "provider_config_key": "aws",
+     "type": "aws_iam_role"
+    },
+    {
+     "address": "aws_iam_role.ask",
+     "expressions": {
+      "assume_role_policy": {
+       "references": [
+        "local.account_id"
+       ]
+      },
+      "name": {
+       "references": [
+        "var.name"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "ask",
+     "provider_config_key": "aws",
+     "type": "aws_iam_role"
+    },
+    {
+     "address": "aws_iam_role.flow_logs",
+     "expressions": {
+      "assume_role_policy": {
+       "references": [
+        "local.account_id"
+       ]
+      },
+      "name": {
+       "references": [
+        "var.name"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "flow_logs",
+     "provider_config_key": "aws",
+     "type": "aws_iam_role"
+    },
+    {
+     "address": "aws_iam_role_policy.ask",
+     "expressions": {
+      "name": {
+       "constant_value": "ask"
+      },
+      "policy": {
+       "references": [
+        "var.knowledge_base_arn",
+        "aws_bedrock_inference_profile.answers.arn",
+        "aws_bedrock_inference_profile.answers",
+        "local.foundation_model_arns",
+        "var.guardrail_arn",
+        "aws_kms_key.api.arn",
+        "aws_kms_key.api",
+        "var.kb_kms_key_arn",
+        "aws_cloudwatch_log_group.ask.arn",
+        "aws_cloudwatch_log_group.ask"
+       ]
+      },
+      "role": {
+       "references": [
+        "aws_iam_role.ask.id",
+        "aws_iam_role.ask"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "ask",
+     "provider_config_key": "aws",
+     "type": "aws_iam_role_policy"
+    },
+    {
+     "address": "aws_iam_role_policy.flow_logs",
+     "expressions": {
+      "name": {
+       "constant_value": "flow-logs"
+      },
+      "policy": {
+       "references": [
+        "aws_cloudwatch_log_group.flow_logs.arn",
+        "aws_cloudwatch_log_group.flow_logs"
+       ]
+      },
+      "role": {
+       "references": [
+        "aws_iam_role.flow_logs.id",
+        "aws_iam_role.flow_logs"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "flow_logs",
+     "provider_config_key": "aws",
+     "type": "aws_iam_role_policy"
+    },
+    {
+     "address": "aws_iam_role_policy_attachment.api_gateway_logs",
+     "count_expression": {
+      "references": [
+       "var.manage_api_gateway_account"
+      ]
+     },
+     "expressions": {
+      "policy_arn": {
+       "references": [
+        "local.partition"
+       ]
+      },
+      "role": {
+       "references": [
+        "aws_iam_role.api_gateway_logs[0].name",
+        "aws_iam_role.api_gateway_logs[0]",
+        "aws_iam_role.api_gateway_logs"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "api_gateway_logs",
+     "provider_config_key": "aws",
+     "type": "aws_iam_role_policy_attachment"
+    },
+    {
+     "address": "aws_iam_role_policy_attachment.ask_vpc",
+     "expressions": {
+      "policy_arn": {
+       "references": [
+        "local.partition"
+       ]
+      },
+      "role": {
+       "references": [
+        "aws_iam_role.ask.name",
+        "aws_iam_role.ask"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "ask_vpc",
+     "provider_config_key": "aws",
+     "type": "aws_iam_role_policy_attachment"
+    },
+    {
+     "address": "aws_kms_alias.api",
+     "expressions": {
+      "name": {
+       "references": [
+        "var.name"
+       ]
+      },
+      "target_key_id": {
+       "references": [
+        "aws_kms_key.api.key_id",
+        "aws_kms_key.api"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "api",
+     "provider_config_key": "aws",
+     "type": "aws_kms_alias"
+    },
+    {
+     "address": "aws_kms_key.api",
+     "expressions": {
+      "deletion_window_in_days": {
+       "constant_value": 30
+      },
+      "description": {
+       "references": [
+        "var.name"
+       ]
+      },
+      "enable_key_rotation": {
+       "constant_value": true
+      },
+      "policy": {
+       "references": [
+        "local.partition",
+        "local.account_id",
+        "local.region",
+        "local.partition",
+        "local.region",
+        "local.account_id",
+        "var.name"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "api",
+     "provider_config_key": "aws",
+     "type": "aws_kms_key"
+    },
+    {
+     "address": "aws_lambda_function.ask",
+     "depends_on": [
+      "aws_iam_role_policy.ask",
+      "aws_iam_role_policy_attachment.ask_vpc",
+      "aws_vpc_endpoint.interface"
+     ],
+     "expressions": {
+      "architectures": {
+       "constant_value": [
+        "arm64"
+       ]
+      },
+      "environment": [
+       {
+        "variables": {
+         "references": [
+          "var.knowledge_base_id",
+          "aws_bedrock_inference_profile.answers.arn",
+          "aws_bedrock_inference_profile.answers",
+          "var.guardrail_id",
+          "var.guardrail_version",
+          "var.retrieval.number_of_results",
+          "var.retrieval",
+          "var.retrieval.max_sources",
+          "var.retrieval",
+          "var.retrieval.min_score",
+          "var.retrieval",
+          "var.retrieval.relative_floor",
+          "var.retrieval",
+          "local.guardrail.prefilter",
+          "local.guardrail"
+         ]
+        }
+       }
+      ],
+      "filename": {
+       "references": [
+        "data.archive_file.lambda.output_path",
+        "data.archive_file.lambda"
+       ]
+      },
+      "function_name": {
+       "references": [
+        "var.name"
+       ]
+      },
+      "handler": {
+       "constant_value": "harbor_rag.handler.lambda_handler"
+      },
+      "kms_key_arn": {
+       "references": [
+        "aws_kms_key.api.arn",
+        "aws_kms_key.api"
+       ]
+      },
+      "logging_config": [
+       {
+        "log_format": {
+         "constant_value": "Text"
+        },
+        "log_group": {
+         "references": [
+          "aws_cloudwatch_log_group.ask.name",
+          "aws_cloudwatch_log_group.ask"
+         ]
+        }
+       }
+      ],
+      "memory_size": {
+       "constant_value": 512
+      },
+      "reserved_concurrent_executions": {
+       "references": [
+        "var.reserved_concurrency"
+       ]
+      },
+      "role": {
+       "references": [
+        "aws_iam_role.ask.arn",
+        "aws_iam_role.ask"
+       ]
+      },
+      "runtime": {
+       "constant_value": "python3.13"
+      },
+      "source_code_hash": {
+       "references": [
+        "data.archive_file.lambda.output_base64sha256",
+        "data.archive_file.lambda"
+       ]
+      },
+      "timeout": {
+       "constant_value": 29
+      },
+      "tracing_config": [
+       {
+        "mode": {
+         "constant_value": "Active"
+        }
+       }
+      ],
+      "vpc_config": [
+       {
+        "security_group_ids": {
+         "references": [
+          "aws_security_group.function.id",
+          "aws_security_group.function"
+         ]
+        },
+        "subnet_ids": {
+         "references": [
+          "aws_subnet.private"
+         ]
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "ask",
+     "provider_config_key": "aws",
+     "type": "aws_lambda_function"
+    },
+    {
+     "address": "aws_lambda_permission.api",
+     "expressions": {
+      "action": {
+       "constant_value": "lambda:InvokeFunction"
+      },
+      "function_name": {
+       "references": [
+        "aws_lambda_function.ask.function_name",
+        "aws_lambda_function.ask"
+       ]
+      },
+      "principal": {
+       "constant_value": "apigateway.amazonaws.com"
+      },
+      "source_arn": {
+       "references": [
+        "aws_api_gateway_rest_api.this.execution_arn",
+        "aws_api_gateway_rest_api.this"
+       ]
+      },
+      "statement_id": {
+       "constant_value": "AllowPrivateApi"
+      }
+     },
+     "mode": "managed",
+     "name": "api",
+     "provider_config_key": "aws",
+     "type": "aws_lambda_permission"
+    },
+    {
+     "address": "aws_route_table.private",
+     "expressions": {
+      "route": {
+       "constant_value": []
+      },
+      "tags": {
+       "references": [
+        "var.name"
+       ]
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.this.id",
+        "aws_vpc.this"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "private",
+     "provider_config_key": "aws",
+     "type": "aws_route_table"
+    },
+    {
+     "address": "aws_route_table_association.private",
+     "count_expression": {
+      "references": [
+       "aws_subnet.private"
+      ]
+     },
+     "expressions": {
+      "route_table_id": {
+       "references": [
+        "aws_route_table.private.id",
+        "aws_route_table.private"
+       ]
+      },
+      "subnet_id": {
+       "references": [
+        "aws_subnet.private",
+        "count.index"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "private",
+     "provider_config_key": "aws",
+     "type": "aws_route_table_association"
+    },
+    {
+     "address": "aws_security_group.endpoints",
+     "expressions": {
+      "description": {
+       "constant_value": "Interface endpoints: HTTPS from inside the VPC"
+      },
+      "name": {
+       "references": [
+        "var.name"
+       ]
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.this.id",
+        "aws_vpc.this"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "endpoints",
+     "provider_config_key": "aws",
+     "type": "aws_security_group"
+    },
+    {
+     "address": "aws_security_group.function",
+     "expressions": {
+      "description": {
+       "constant_value": "Ask function: HTTPS to the VPC endpoints only"
+      },
+      "name": {
+       "references": [
+        "var.name"
+       ]
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.this.id",
+        "aws_vpc.this"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "function",
+     "provider_config_key": "aws",
+     "type": "aws_security_group"
+    },
+    {
+     "address": "aws_subnet.private",
+     "count_expression": {
+      "references": [
+       "var.availability_zone_ids"
+      ]
+     },
+     "expressions": {
+      "availability_zone_id": {
+       "references": [
+        "var.availability_zone_ids",
+        "count.index"
+       ]
+      },
+      "cidr_block": {
+       "references": [
+        "var.vpc_cidr",
+        "count.index"
+       ]
+      },
+      "map_public_ip_on_launch": {
+       "constant_value": false
+      },
+      "tags": {
+       "references": [
+        "var.name",
+        "var.availability_zone_ids",
+        "count.index"
+       ]
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.this.id",
+        "aws_vpc.this"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "private",
+     "provider_config_key": "aws",
+     "type": "aws_subnet"
+    },
+    {
+     "address": "aws_vpc.this",
+     "expressions": {
+      "cidr_block": {
+       "references": [
+        "var.vpc_cidr"
+       ]
+      },
+      "enable_dns_hostnames": {
+       "constant_value": true
+      },
+      "enable_dns_support": {
+       "constant_value": true
+      },
+      "tags": {
+       "references": [
+        "var.name"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "this",
+     "provider_config_key": "aws",
+     "type": "aws_vpc"
+    },
+    {
+     "address": "aws_vpc_endpoint.interface",
+     "expressions": {
+      "policy": {
+       "references": [
+        "each.value"
+       ]
+      },
+      "private_dns_enabled": {
+       "constant_value": true
+      },
+      "security_group_ids": {
+       "references": [
+        "aws_security_group.endpoints.id",
+        "aws_security_group.endpoints"
+       ]
+      },
+      "service_name": {
+       "references": [
+        "local.region",
+        "each.key"
+       ]
+      },
+      "subnet_ids": {
+       "references": [
+        "aws_subnet.private"
+       ]
+      },
+      "tags": {
+       "references": [
+        "var.name",
+        "each.key"
+       ]
+      },
+      "vpc_endpoint_type": {
+       "constant_value": "Interface"
+      },
+      "vpc_id": {
+       "references": [
+        "aws_vpc.this.id",
+        "aws_vpc.this"
+       ]
+      }
+     },
+     "for_each_expression": {
+      "references": [
+       "local.endpoint_policies"
+      ]
+     },
+     "mode": "managed",
+     "name": "interface",
+     "provider_config_key": "aws",
+     "type": "aws_vpc_endpoint"
+    },
+    {
+     "address": "aws_vpc_security_group_egress_rule.function_to_endpoints",
+     "expressions": {
+      "description": {
+       "constant_value": "HTTPS to the Bedrock interface endpoints"
+      },
+      "from_port": {
+       "constant_value": 443
+      },
+      "ip_protocol": {
+       "constant_value": "tcp"
+      },
+      "referenced_security_group_id": {
+       "references": [
+        "aws_security_group.endpoints.id",
+        "aws_security_group.endpoints"
+       ]
+      },
+      "security_group_id": {
+       "references": [
+        "aws_security_group.function.id",
+        "aws_security_group.function"
+       ]
+      },
+      "to_port": {
+       "constant_value": 443
+      }
+     },
+     "mode": "managed",
+     "name": "function_to_endpoints",
+     "provider_config_key": "aws",
+     "type": "aws_vpc_security_group_egress_rule"
+    },
+    {
+     "address": "aws_vpc_security_group_ingress_rule.endpoints_from_vpc",
+     "expressions": {
+      "cidr_ipv4": {
+       "references": [
+        "var.vpc_cidr"
+       ]
+      },
+      "description": {
+       "constant_value": "HTTPS from the VPC (the function, and staff clients routed into the VPC)"
+      },
+      "from_port": {
+       "constant_value": 443
+      },
+      "ip_protocol": {
+       "constant_value": "tcp"
+      },
+      "security_group_id": {
+       "references": [
+        "aws_security_group.endpoints.id",
+        "aws_security_group.endpoints"
+       ]
+      },
+      "to_port": {
+       "constant_value": 443
+      }
+     },
+     "mode": "managed",
+     "name": "endpoints_from_vpc",
+     "provider_config_key": "aws",
+     "type": "aws_vpc_security_group_ingress_rule"
+    },
+    {
+     "address": "data.archive_file.lambda",
+     "expressions": {
+      "output_path": {
+       "references": [
+        "path.module"
+       ]
+      },
+      "type": {
+       "constant_value": "zip"
+      }
+     },
+     "mode": "data",
+     "name": "lambda",
+     "provider_config_key": "archive",
+     "type": "archive_file"
+    },
+    {
+     "address": "data.aws_iam_policy_document.api",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "execute-api:Invoke"
+         ]
+        },
+        "effect": {
+         "constant_value": "Allow"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "references": [
+            "local.partition",
+            "local.account_id"
+           ]
+          },
+          "type": {
+           "constant_value": "AWS"
+          }
+         }
+        ],
+        "resources": {
+         "constant_value": [
+          "execute-api:/*"
+         ]
+        },
+        "sid": {
+         "constant_value": "AllowSignedCallsFromThisAccount"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
+          "execute-api:Invoke"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "StringNotEquals"
+          },
+          "values": {
+           "references": [
+            "aws_vpc_endpoint.interface[\"execute-api\"].id",
+            "aws_vpc_endpoint.interface[\"execute-api\"]",
+            "aws_vpc_endpoint.interface"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SourceVpce"
+          }
+         }
+        ],
+        "effect": {
+         "constant_value": "Deny"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "*"
+           ]
+          },
+          "type": {
+           "constant_value": "*"
+          }
+         }
+        ],
+        "resources": {
+         "constant_value": [
+          "execute-api:/*"
+         ]
+        },
+        "sid": {
+         "constant_value": "DenyOutsideTheVpcEndpoint"
+        }
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "api",
+     "provider_config_key": "aws",
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_partition.current",
+     "mode": "data",
+     "name": "current",
+     "provider_config_key": "aws",
+     "type": "aws_partition"
+    },
+    {
+     "address": "data.aws_region.current",
+     "mode": "data",
+     "name": "current",
+     "provider_config_key": "aws",
+     "type": "aws_region"
+    }
+   ],
+   "variables": {
+    "alarm_topic_arn": {
+     "description": "SNS topic for alarms and the budget (data stack output alerts_topic_arn)."
+    },
+    "answer_model_id": {
+     "default": "amazon.nova-lite-v1:0",
+     "description": "Model that writes the answers (ADR 0007). Cross-Region inference profiles start with \"us.\"."
+    },
+    "api_throttle": {
+     "default": {
+      "burst_limit": 20,
+      "rate_limit": 10
+     },
+     "description": "Stage-wide API throttling."
+    },
+    "availability_zone_ids": {
+     "default": [
+      "use1-az1",
+      "use1-az2"
+     ],
+     "description": "Two zone IDs (not names, which differ per account) where the Bedrock endpoint services are offered."
+    },
+    "guardrail_arn": {
+     "description": "Guardrail ARN (knowledge-base stack output)."
+    },
+    "guardrail_id": {
+     "description": "Guardrail ID (knowledge-base stack output)."
+    },
+    "guardrail_version": {
+     "description": "Published guardrail version to enforce. DRAFT is refused: the function must run a reviewed version."
+    },
+    "kb_kms_key_arn": {
+     "description": "KMS key of the knowledge-base stack (the guardrail is encrypted with it)."
+    },
+    "knowledge_base_arn": {
+     "description": "Knowledge base ARN (knowledge-base stack output)."
+    },
+    "knowledge_base_id": {
+     "description": "Knowledge base ID (knowledge-base stack output)."
+    },
+    "log_retention_days": {
+     "default": 365,
+     "description": "Days to keep function, API and flow logs."
+    },
+    "manage_api_gateway_account": {
+     "default": true,
+     "description": "Set the account-level API Gateway CloudWatch role (needed once per account and Region for API logs)."
+    },
+    "monthly_budget_usd": {
+     "default": 150,
+     "description": "Monthly cost budget for resources tagged project = name. Alerts at 80 percent forecast and 100 percent actual."
+    },
+    "name": {
+     "default": "harbor-policy-assistant",
+     "description": "Name prefix for every resource (lower case, digits and hyphens)."
+    },
+    "region": {
+     "default": "us-east-1",
+     "description": "AWS Region for every stack in this repository."
+    },
+    "reserved_concurrency": {
+     "default": 20,
+     "description": "Upper bound on concurrent answers, which also bounds the Bedrock spend rate."
+    },
+    "retrieval": {
+     "default": {
+      "max_sources": 3,
+      "min_score": 0.35,
+      "number_of_results": 8,
+      "relative_floor": 0.85
+     },
+     "description": "Context selection for the ask function (see src/harbor_rag/prompt.py and docs/runbook.md)."
+    },
+    "tags": {
+     "default": {},
+     "description": "Extra tags for every resource."
+    },
+    "vpc_cidr": {
+     "default": "10.40.0.0/16",
+     "description": "CIDR of the private VPC that holds the function and the interface endpoints."
+    }
+   }
+  }
+ },
+ "format_version": "1.2",
+ "resource_changes": [
+  {
+   "action_reason": "read_because_config_unknown",
+   "address": "data.aws_iam_policy_document.api",
+   "change": {
+    "actions": [
+     "read"
+    ],
+    "after": {
+     "override_json": null,
+     "override_policy_documents": null,
+     "policy_id": null,
+     "source_json": null,
+     "source_policy_documents": null,
+     "statement": [
+      {
+       "actions": [
+        "execute-api:Invoke"
+       ],
+       "condition": [],
+       "effect": "Allow",
+       "not_actions": null,
+       "not_principals": [],
+       "not_resources": null,
+       "principals": [
+        {
+         "identifiers": [
+          "arn:aws:iam::111122223333:root"
+         ],
+         "type": "AWS"
+        }
+       ],
+       "resources": [
+        "execute-api:/*"
+       ],
+       "sid": "AllowSignedCallsFromThisAccount"
+      },
+      {
+       "actions": [
+        "execute-api:Invoke"
+       ],
+       "condition": [
+        {
+         "test": "StringNotEquals",
+         "values": [
+          null
+         ],
+         "variable": "aws:SourceVpce"
+        }
+       ],
+       "effect": "Deny",
+       "not_actions": null,
+       "not_principals": [],
+       "not_resources": null,
+       "principals": [
+        {
+         "identifiers": [
+          "*"
+         ],
+         "type": "*"
+        }
+       ],
+       "resources": [
+        "execute-api:/*"
+       ],
+       "sid": "DenyOutsideTheVpcEndpoint"
+      }
+     ],
+     "version": null
+    },
+    "after_unknown": {
+     "id": true,
+     "json": true,
+     "minified_json": true,
+     "statement": [
+      {
+       "actions": [
+        false
+       ],
+       "condition": [],
+       "not_principals": [],
+       "principals": [
+        {
+         "identifiers": [
+          false
+         ]
+        }
+       ],
+       "resources": [
+        false
+       ]
+      },
+      {
+       "actions": [
+        false
+       ],
+       "condition": [
+        {
+         "values": [
+          true
+         ]
+        }
+       ],
+       "not_principals": [],
+       "principals": [
+        {
+         "identifiers": [
+          false
+         ]
+        }
+       ],
+       "resources": [
+        false
+       ]
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "data",
+   "name": "api",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_iam_policy_document"
+  },
+  {
+   "address": "aws_api_gateway_account.this[0]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "region": "us-east-1"
+    },
+    "after_unknown": {
+     "api_key_version": true,
+     "cloudwatch_role_arn": true,
+     "features": true,
+     "id": true,
+     "throttle_settings": true
+    },
+    "before": null
+   },
+   "index": 0,
+   "mode": "managed",
+   "name": "this",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_api_gateway_account"
+  },
+  {
+   "address": "aws_api_gateway_deployment.this",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "description": null,
+     "region": "us-east-1",
+     "variables": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null,
+     "rest_api_id": null
+    },
+    "after_unknown": {
+     "created_date": true,
+     "id": true,
+     "rest_api_id": true,
+     "triggers": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "this",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_api_gateway_deployment"
+  },
+  {
+   "address": "aws_api_gateway_integration.ask",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "cache_key_parameters": null,
+     "connection_id": null,
+     "connection_type": "INTERNET",
+     "content_handling": null,
+     "credentials": null,
+     "http_method": "POST",
+     "integration_http_method": "POST",
+     "integration_target": null,
+     "region": "us-east-1",
+     "request_parameters": null,
+     "request_templates": null,
+     "timeout_milliseconds": 29000,
+     "tls_config": [],
+     "type": "AWS_PROXY"
+    },
+    "after_identity": {
+     "account_id": null,
+     "http_method": null,
+     "region": null,
+     "resource_id": null,
+     "rest_api_id": null
+    },
+    "after_unknown": {
+     "cache_namespace": true,
+     "id": true,
+     "passthrough_behavior": true,
+     "resource_id": true,
+     "response_transfer_mode": true,
+     "rest_api_id": true,
+     "tls_config": [],
+     "uri": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "ask",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_api_gateway_integration"
+  },
+  {
+   "address": "aws_api_gateway_method.ask",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "api_key_required": false,
+     "authorization": "AWS_IAM",
+     "authorization_scopes": null,
+     "authorizer_id": null,
+     "http_method": "POST",
+     "operation_name": null,
+     "region": "us-east-1",
+     "request_models": {
+      "application/json": "AskRequest"
+     },
+     "request_parameters": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "http_method": null,
+     "region": null,
+     "resource_id": null,
+     "rest_api_id": null
+    },
+    "after_unknown": {
+     "id": true,
+     "request_models": {},
+     "request_validator_id": true,
+     "resource_id": true,
+     "rest_api_id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "ask",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_api_gateway_method"
+  },
+  {
+   "address": "aws_api_gateway_method_settings.all",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "method_path": "*/*",
+     "region": "us-east-1",
+     "settings": [
+      {
+       "caching_enabled": false,
+       "data_trace_enabled": false,
+       "logging_level": "INFO",
+       "metrics_enabled": true,
+       "throttling_burst_limit": 20,
+       "throttling_rate_limit": 10
+      }
+     ],
+     "stage_name": "v1"
+    },
+    "after_unknown": {
+     "id": true,
+     "rest_api_id": true,
+     "settings": [
+      {
+       "cache_data_encrypted": true,
+       "cache_ttl_in_seconds": true,
+       "require_authorization_for_cache_control": true,
+       "unauthorized_cache_control_header_strategy": true
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "all",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_api_gateway_method_settings"
+  },
+  {
+   "address": "aws_api_gateway_model.ask",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "content_type": "application/json",
+     "description": null,
+     "name": "AskRequest",
+     "region": "us-east-1",
+     "schema": "{\"$schema\":\"http://json-schema.org/draft-04/schema#\",\"additionalProperties\":false,\"properties\":{\"doc_type\":{\"enum\":[\"returns\",\"warranty\",\"shipping\",\"supplier\",\"store-ops\"],\"type\":\"string\"},\"question\":{\"maxLength\":1000,\"minLength\":1,\"type\":\"string\"}},\"required\":[\"question\"],\"type\":\"object\"}"
+    },
+    "after_unknown": {
+     "id": true,
+     "rest_api_id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "ask",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_api_gateway_model"
+  },
+  {
+   "address": "aws_api_gateway_request_validator.body",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "name": "body",
+     "region": "us-east-1",
+     "validate_request_body": true,
+     "validate_request_parameters": false
+    },
+    "after_unknown": {
+     "id": true,
+     "rest_api_id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "body",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_api_gateway_request_validator"
+  },
+  {
+   "address": "aws_api_gateway_resource.ask",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "path_part": "ask",
+     "region": "us-east-1"
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null,
+     "rest_api_id": null
+    },
+    "after_unknown": {
+     "id": true,
+     "parent_id": true,
+     "path": true,
+     "rest_api_id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "ask",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_api_gateway_resource"
+  },
+  {
+   "address": "aws_api_gateway_rest_api.this",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "body": null,
+     "description": "Harbor Goods policy assistant (private)",
+     "endpoint_access_mode": null,
+     "endpoint_configuration": [
+      {
+       "types": [
+        "PRIVATE"
+       ]
+      }
+     ],
+     "fail_on_warnings": null,
+     "name": "harbor-policy-assistant",
+     "parameters": null,
+     "put_rest_api_mode": null,
+     "region": "us-east-1",
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "timeouts": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null
+    },
+    "after_unknown": {
+     "api_key_source": true,
+     "arn": true,
+     "binary_media_types": true,
+     "created_date": true,
+     "disable_execute_api_endpoint": true,
+     "endpoint_configuration": [
+      {
+       "ip_address_type": true,
+       "types": [
+        false
+       ],
+       "vpc_endpoint_ids": true
+      }
+     ],
+     "execution_arn": true,
+     "id": true,
+     "minimum_compression_size": true,
+     "policy": true,
+     "root_resource_id": true,
+     "security_policy": true,
+     "tags_all": {}
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "this",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_api_gateway_rest_api"
+  },
+  {
+   "address": "aws_api_gateway_rest_api_policy.this",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "region": "us-east-1"
+    },
+    "after_unknown": {
+     "id": true,
+     "policy": true,
+     "rest_api_id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "this",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_api_gateway_rest_api_policy"
+  },
+  {
+   "address": "aws_api_gateway_stage.v1",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "access_log_settings": [
+      {
+       "format": "{\"caller\":\"$context.identity.caller\",\"integrationErr\":\"$context.integration.error\",\"latencyMs\":\"$context.responseLatency\",\"requestId\":\"$context.requestId\",\"resourcePath\":\"$context.resourcePath\",\"sourceVpce\":\"$context.identity.vpceId\",\"status\":\"$context.status\",\"userArn\":\"$context.identity.userArn\"}"
+      }
+     ],
+     "cache_cluster_enabled": null,
+     "cache_cluster_size": null,
+     "canary_settings": [],
+     "client_certificate_id": null,
+     "description": null,
+     "documentation_version": null,
+     "region": "us-east-1",
+     "stage_name": "v1",
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "variables": null,
+     "xray_tracing_enabled": true
+    },
+    "after_unknown": {
+     "access_log_settings": [
+      {
+       "destination_arn": true
+      }
+     ],
+     "arn": true,
+     "canary_settings": [],
+     "deployment_id": true,
+     "execution_arn": true,
+     "id": true,
+     "invoke_url": true,
+     "rest_api_id": true,
+     "tags_all": {},
+     "web_acl_arn": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "v1",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_api_gateway_stage"
+  },
+  {
+   "address": "aws_bedrock_inference_profile.answers",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "description": "Answers for the Harbor Goods policy assistant (amazon.nova-lite-v1:0)",
+     "model_source": [
+      {
+       "copy_from": "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-lite-v1:0"
+      }
+     ],
+     "name": "harbor-policy-assistant-answers",
+     "region": "us-east-1",
+     "tags": {
+      "cost-allocation": "harbor-policy-assistant-answers"
+     },
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "cost-allocation": "harbor-policy-assistant-answers",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "timeouts": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "created_at": true,
+     "id": true,
+     "model_source": [
+      {}
+     ],
+     "models": true,
+     "status": true,
+     "tags": {},
+     "tags_all": {},
+     "type": true,
+     "updated_at": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "answers",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_bedrock_inference_profile"
+  },
+  {
+   "address": "aws_budgets_budget.monthly",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "auto_adjust_data": [],
+     "billing_view_arn": null,
+     "budget_type": "COST",
+     "cost_filter": [
+      {
+       "name": "TagKeyValue",
+       "values": [
+        "user:project$harbor-policy-assistant"
+       ]
+      }
+     ],
+     "filter_expression": [],
+     "limit_amount": "150",
+     "limit_unit": "USD",
+     "metrics": null,
+     "name": "harbor-policy-assistant-monthly",
+     "notification": [
+      {
+       "comparison_operator": "GREATER_THAN",
+       "notification_type": "ACTUAL",
+       "subscriber_email_addresses": [],
+       "subscriber_sns_topic_arns": [
+        "arn:aws:sns:us-east-1:111122223333:harbor-policy-assistant-alerts"
+       ],
+       "threshold": 100,
+       "threshold_type": "PERCENTAGE"
+      },
+      {
+       "comparison_operator": "GREATER_THAN",
+       "notification_type": "FORECASTED",
+       "subscriber_email_addresses": [],
+       "subscriber_sns_topic_arns": [
+        "arn:aws:sns:us-east-1:111122223333:harbor-policy-assistant-alerts"
+       ],
+       "threshold": 80,
+       "threshold_type": "PERCENTAGE"
+      }
+     ],
+     "planned_limit": [],
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "time_period_end": "2087-06-15_00:00",
+     "time_unit": "MONTHLY"
+    },
+    "after_unknown": {
+     "account_id": true,
+     "arn": true,
+     "auto_adjust_data": [],
+     "cost_filter": [
+      {
+       "values": [
+        false
+       ]
+      }
+     ],
+     "cost_types": true,
+     "filter_expression": [],
+     "id": true,
+     "name_prefix": true,
+     "notification": [
+      {
+       "subscriber_email_addresses": [],
+       "subscriber_sns_topic_arns": [
+        false
+       ]
+      },
+      {
+       "subscriber_email_addresses": [],
+       "subscriber_sns_topic_arns": [
+        false
+       ]
+      }
+     ],
+     "planned_limit": [],
+     "tags_all": {},
+     "time_period_start": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "monthly",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_budgets_budget"
+  },
+  {
+   "address": "aws_cloudwatch_dashboard.this",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "dashboard_body": "{\"widgets\":[{\"height\":6,\"properties\":{\"metrics\":[[\"HarborGoods/PolicyAssistant\",\"InputTokens\"],[\"HarborGoods/PolicyAssistant\",\"OutputTokens\"]],\"period\":300,\"region\":\"us-east-1\",\"stat\":\"Sum\",\"title\":\"Tokens per 5 minutes\"},\"type\":\"metric\",\"width\":12,\"x\":0,\"y\":0},{\"height\":6,\"properties\":{\"metrics\":[[\"HarborGoods/PolicyAssistant\",\"Latency\",{\"stat\":\"p50\"}],[\"HarborGoods/PolicyAssistant\",\"Latency\",{\"stat\":\"p95\"}]],\"period\":300,\"region\":\"us-east-1\",\"title\":\"Answer latency (ms)\"},\"type\":\"metric\",\"width\":12,\"x\":12,\"y\":0},{\"height\":6,\"properties\":{\"metrics\":[[\"HarborGoods/PolicyAssistant\",\"Refusals\"],[\"HarborGoods/PolicyAssistant\",\"GuardrailInterventions\"]],\"period\":300,\"region\":\"us-east-1\",\"stat\":\"Sum\",\"title\":\"Refusals and guardrail interventions\"},\"type\":\"metric\",\"width\":12,\"x\":0,\"y\":6},{\"height\":6,\"properties\":{\"metrics\":[[\"AWS/Lambda\",\"Errors\",\"FunctionName\",\"harbor-policy-assistant-ask\"],[\"AWS/Lambda\",\"Throttles\",\"FunctionName\",\"harbor-policy-assistant-ask\"],[\"AWS/ApiGateway\",\"5XXError\",\"ApiName\",\"harbor-policy-assistant\",\"Stage\",\"v1\"],[\"AWS/ApiGateway\",\"4XXError\",\"ApiName\",\"harbor-policy-assistant\",\"Stage\",\"v1\"]],\"period\":300,\"region\":\"us-east-1\",\"stat\":\"Sum\",\"title\":\"Function and API errors\"},\"type\":\"metric\",\"width\":12,\"x\":12,\"y\":6}]}",
+     "dashboard_name": "harbor-policy-assistant",
+     "region": "us-east-1"
+    },
+    "after_identity": {
+     "account_id": null,
+     "dashboard_name": null,
+     "region": null
+    },
+    "after_unknown": {
+     "dashboard_arn": true,
+     "id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "this",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_cloudwatch_dashboard"
+  },
+  {
+   "address": "aws_cloudwatch_log_group.api_access",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "name": "/aws/apigateway/harbor-policy-assistant-access",
+     "region": "us-east-1",
+     "retention_in_days": 365,
+     "skip_destroy": false,
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     }
+    },
+    "after_identity": {
+     "account_id": null,
+     "name": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "deletion_protection_enabled": true,
+     "id": true,
+     "kms_key_id": true,
+     "log_group_class": true,
+     "name_prefix": true,
+     "tags_all": {}
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "api_access",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_cloudwatch_log_group"
+  },
+  {
+   "address": "aws_cloudwatch_log_group.ask",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "name": "/aws/lambda/harbor-policy-assistant-ask",
+     "region": "us-east-1",
+     "retention_in_days": 365,
+     "skip_destroy": false,
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     }
+    },
+    "after_identity": {
+     "account_id": null,
+     "name": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "deletion_protection_enabled": true,
+     "id": true,
+     "kms_key_id": true,
+     "log_group_class": true,
+     "name_prefix": true,
+     "tags_all": {}
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "ask",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_cloudwatch_log_group"
+  },
+  {
+   "address": "aws_cloudwatch_log_group.flow_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "name": "/vpc/harbor-policy-assistant-flow-logs",
+     "region": "us-east-1",
+     "retention_in_days": 365,
+     "skip_destroy": false,
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     }
+    },
+    "after_identity": {
+     "account_id": null,
+     "name": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "deletion_protection_enabled": true,
+     "id": true,
+     "kms_key_id": true,
+     "log_group_class": true,
+     "name_prefix": true,
+     "tags_all": {}
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "flow_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_cloudwatch_log_group"
+  },
+  {
+   "address": "aws_cloudwatch_metric_alarm.this[\"api-5xx\"]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "actions_enabled": true,
+     "alarm_actions": [
+      "arn:aws:sns:us-east-1:111122223333:harbor-policy-assistant-alerts"
+     ],
+     "alarm_description": "The API returned server errors (Bedrock throttling or failures).",
+     "alarm_name": "harbor-policy-assistant-api-5xx",
+     "comparison_operator": "GreaterThanThreshold",
+     "datapoints_to_alarm": null,
+     "dimensions": {
+      "ApiName": "harbor-policy-assistant",
+      "Stage": "v1"
+     },
+     "evaluation_criteria": [],
+     "evaluation_interval": null,
+     "evaluation_periods": 1,
+     "extended_statistic": null,
+     "insufficient_data_actions": null,
+     "metric_name": "5XXError",
+     "metric_query": [],
+     "namespace": "AWS/ApiGateway",
+     "ok_actions": null,
+     "period": 300,
+     "region": "us-east-1",
+     "statistic": "Sum",
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "threshold": 5,
+     "threshold_metric_id": null,
+     "treat_missing_data": "notBreaching",
+     "unit": null,
+     "warm_up_configuration": []
+    },
+    "after_identity": {
+     "account_id": null,
+     "alarm_name": null,
+     "region": null
+    },
+    "after_unknown": {
+     "alarm_actions": [
+      false
+     ],
+     "arn": true,
+     "dimensions": {},
+     "evaluate_low_sample_count_percentiles": true,
+     "evaluation_criteria": [],
+     "id": true,
+     "metric_query": [],
+     "tags_all": {},
+     "warm_up_configuration": []
+    },
+    "before": null
+   },
+   "index": "api-5xx",
+   "mode": "managed",
+   "name": "this",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_cloudwatch_metric_alarm"
+  },
+  {
+   "address": "aws_cloudwatch_metric_alarm.this[\"function-errors\"]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "actions_enabled": true,
+     "alarm_actions": [
+      "arn:aws:sns:us-east-1:111122223333:harbor-policy-assistant-alerts"
+     ],
+     "alarm_description": "The ask function raised errors. See docs/runbook.md, Investigate a bad answer.",
+     "alarm_name": "harbor-policy-assistant-function-errors",
+     "comparison_operator": "GreaterThanThreshold",
+     "datapoints_to_alarm": null,
+     "dimensions": {
+      "FunctionName": "harbor-policy-assistant-ask"
+     },
+     "evaluation_criteria": [],
+     "evaluation_interval": null,
+     "evaluation_periods": 1,
+     "extended_statistic": null,
+     "insufficient_data_actions": null,
+     "metric_name": "Errors",
+     "metric_query": [],
+     "namespace": "AWS/Lambda",
+     "ok_actions": null,
+     "period": 300,
+     "region": "us-east-1",
+     "statistic": "Sum",
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "threshold": 0,
+     "threshold_metric_id": null,
+     "treat_missing_data": "notBreaching",
+     "unit": null,
+     "warm_up_configuration": []
+    },
+    "after_identity": {
+     "account_id": null,
+     "alarm_name": null,
+     "region": null
+    },
+    "after_unknown": {
+     "alarm_actions": [
+      false
+     ],
+     "arn": true,
+     "dimensions": {},
+     "evaluate_low_sample_count_percentiles": true,
+     "evaluation_criteria": [],
+     "id": true,
+     "metric_query": [],
+     "tags_all": {},
+     "warm_up_configuration": []
+    },
+    "before": null
+   },
+   "index": "function-errors",
+   "mode": "managed",
+   "name": "this",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_cloudwatch_metric_alarm"
+  },
+  {
+   "address": "aws_cloudwatch_metric_alarm.this[\"function-throttles\"]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "actions_enabled": true,
+     "alarm_actions": [
+      "arn:aws:sns:us-east-1:111122223333:harbor-policy-assistant-alerts"
+     ],
+     "alarm_description": "Reserved concurrency is exhausted; staff get 429 or 503.",
+     "alarm_name": "harbor-policy-assistant-function-throttles",
+     "comparison_operator": "GreaterThanThreshold",
+     "datapoints_to_alarm": null,
+     "dimensions": {
+      "FunctionName": "harbor-policy-assistant-ask"
+     },
+     "evaluation_criteria": [],
+     "evaluation_interval": null,
+     "evaluation_periods": 1,
+     "extended_statistic": null,
+     "insufficient_data_actions": null,
+     "metric_name": "Throttles",
+     "metric_query": [],
+     "namespace": "AWS/Lambda",
+     "ok_actions": null,
+     "period": 300,
+     "region": "us-east-1",
+     "statistic": "Sum",
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "threshold": 5,
+     "threshold_metric_id": null,
+     "treat_missing_data": "notBreaching",
+     "unit": null,
+     "warm_up_configuration": []
+    },
+    "after_identity": {
+     "account_id": null,
+     "alarm_name": null,
+     "region": null
+    },
+    "after_unknown": {
+     "alarm_actions": [
+      false
+     ],
+     "arn": true,
+     "dimensions": {},
+     "evaluate_low_sample_count_percentiles": true,
+     "evaluation_criteria": [],
+     "id": true,
+     "metric_query": [],
+     "tags_all": {},
+     "warm_up_configuration": []
+    },
+    "before": null
+   },
+   "index": "function-throttles",
+   "mode": "managed",
+   "name": "this",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_cloudwatch_metric_alarm"
+  },
+  {
+   "address": "aws_cloudwatch_metric_alarm.this[\"guardrail-spike\"]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "actions_enabled": true,
+     "alarm_actions": [
+      "arn:aws:sns:us-east-1:111122223333:harbor-policy-assistant-alerts"
+     ],
+     "alarm_description": "Unusual number of guardrail interventions: misuse, a prompt-injection attempt, or a bad document.",
+     "alarm_name": "harbor-policy-assistant-guardrail-spike",
+     "comparison_operator": "GreaterThanThreshold",
+     "datapoints_to_alarm": null,
+     "dimensions": null,
+     "evaluation_criteria": [],
+     "evaluation_interval": null,
+     "evaluation_periods": 1,
+     "extended_statistic": null,
+     "insufficient_data_actions": null,
+     "metric_name": "GuardrailInterventions",
+     "metric_query": [],
+     "namespace": "HarborGoods/PolicyAssistant",
+     "ok_actions": null,
+     "period": 300,
+     "region": "us-east-1",
+     "statistic": "Sum",
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "threshold": 20,
+     "threshold_metric_id": null,
+     "treat_missing_data": "notBreaching",
+     "unit": null,
+     "warm_up_configuration": []
+    },
+    "after_identity": {
+     "account_id": null,
+     "alarm_name": null,
+     "region": null
+    },
+    "after_unknown": {
+     "alarm_actions": [
+      false
+     ],
+     "arn": true,
+     "evaluate_low_sample_count_percentiles": true,
+     "evaluation_criteria": [],
+     "id": true,
+     "metric_query": [],
+     "tags_all": {},
+     "warm_up_configuration": []
+    },
+    "before": null
+   },
+   "index": "guardrail-spike",
+   "mode": "managed",
+   "name": "this",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_cloudwatch_metric_alarm"
+  },
+  {
+   "address": "aws_default_security_group.this",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "region": "us-east-1",
+     "revoke_rules_on_delete": false,
+     "tags": {
+      "Name": "harbor-policy-assistant-default-unused"
+     },
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "Name": "harbor-policy-assistant-default-unused",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     }
+    },
+    "after_unknown": {
+     "arn": true,
+     "description": true,
+     "egress": true,
+     "id": true,
+     "ingress": true,
+     "name": true,
+     "name_prefix": true,
+     "owner_id": true,
+     "tags": {},
+     "tags_all": {},
+     "vpc_id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "this",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_default_security_group"
+  },
+  {
+   "address": "aws_flow_log.this",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "deliver_cross_account_role": null,
+     "destination_options": [],
+     "eni_id": null,
+     "log_destination_type": "cloud-watch-logs",
+     "max_aggregation_interval": 600,
+     "region": "us-east-1",
+     "regional_nat_gateway_id": null,
+     "subnet_id": null,
+     "tag_field_specification": [],
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "traffic_type": "ALL",
+     "transit_gateway_attachment_id": null,
+     "transit_gateway_id": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "destination_options": [],
+     "iam_role_arn": true,
+     "id": true,
+     "log_destination": true,
+     "log_format": true,
+     "tag_field_specification": [],
+     "tags_all": {},
+     "vpc_id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "this",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_flow_log"
+  },
+  {
+   "address": "aws_iam_role.api_gateway_logs[0]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "assume_role_policy": "{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Condition\":{\"StringEquals\":{\"aws:SourceAccount\":\"111122223333\"}},\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"apigateway.amazonaws.com\"}}],\"Version\":\"2012-10-17\"}",
+     "description": null,
+     "force_detach_policies": false,
+     "max_session_duration": 3600,
+     "name": "harbor-policy-assistant-apigateway-logs",
+     "path": "/",
+     "permissions_boundary": null,
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     }
+    },
+    "after_identity": {
+     "account_id": null,
+     "name": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "create_date": true,
+     "id": true,
+     "inline_policy": true,
+     "managed_policy_arns": true,
+     "name_prefix": true,
+     "tags_all": {},
+     "unique_id": true
+    },
+    "before": null
+   },
+   "index": 0,
+   "mode": "managed",
+   "name": "api_gateway_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_iam_role"
+  },
+  {
+   "address": "aws_iam_role.ask",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "assume_role_policy": "{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Condition\":{\"StringEquals\":{\"aws:SourceAccount\":\"111122223333\"}},\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"}}],\"Version\":\"2012-10-17\"}",
+     "description": null,
+     "force_detach_policies": false,
+     "max_session_duration": 3600,
+     "name": "harbor-policy-assistant-ask",
+     "path": "/",
+     "permissions_boundary": null,
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     }
+    },
+    "after_identity": {
+     "account_id": null,
+     "name": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "create_date": true,
+     "id": true,
+     "inline_policy": true,
+     "managed_policy_arns": true,
+     "name_prefix": true,
+     "tags_all": {},
+     "unique_id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "ask",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_iam_role"
+  },
+  {
+   "address": "aws_iam_role.flow_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "assume_role_policy": "{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Condition\":{\"StringEquals\":{\"aws:SourceAccount\":\"111122223333\"}},\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"vpc-flow-logs.amazonaws.com\"}}],\"Version\":\"2012-10-17\"}",
+     "description": null,
+     "force_detach_policies": false,
+     "max_session_duration": 3600,
+     "name": "harbor-policy-assistant-flow-logs",
+     "path": "/",
+     "permissions_boundary": null,
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     }
+    },
+    "after_identity": {
+     "account_id": null,
+     "name": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "create_date": true,
+     "id": true,
+     "inline_policy": true,
+     "managed_policy_arns": true,
+     "name_prefix": true,
+     "tags_all": {},
+     "unique_id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "flow_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_iam_role"
+  },
+  {
+   "address": "aws_iam_role_policy.ask",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "name": "ask"
+    },
+    "after_identity": {
+     "account_id": null,
+     "name": null,
+     "role": null
+    },
+    "after_unknown": {
+     "id": true,
+     "name_prefix": true,
+     "policy": true,
+     "role": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "ask",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_iam_role_policy"
+  },
+  {
+   "address": "aws_iam_role_policy.flow_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "name": "flow-logs"
+    },
+    "after_identity": {
+     "account_id": null,
+     "name": null,
+     "role": null
+    },
+    "after_unknown": {
+     "id": true,
+     "name_prefix": true,
+     "policy": true,
+     "role": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "flow_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_iam_role_policy"
+  },
+  {
+   "address": "aws_iam_role_policy_attachment.api_gateway_logs[0]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "policy_arn": "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs",
+     "role": "harbor-policy-assistant-apigateway-logs"
+    },
+    "after_identity": {
+     "account_id": null,
+     "policy_arn": null,
+     "role": null
+    },
+    "after_unknown": {
+     "id": true
+    },
+    "before": null
+   },
+   "index": 0,
+   "mode": "managed",
+   "name": "api_gateway_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_iam_role_policy_attachment"
+  },
+  {
+   "address": "aws_iam_role_policy_attachment.ask_vpc",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "policy_arn": "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+     "role": "harbor-policy-assistant-ask"
+    },
+    "after_identity": {
+     "account_id": null,
+     "policy_arn": null,
+     "role": null
+    },
+    "after_unknown": {
+     "id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "ask_vpc",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_iam_role_policy_attachment"
+  },
+  {
+   "address": "aws_kms_alias.api",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "name": "alias/harbor-policy-assistant-api",
+     "region": "us-east-1"
+    },
+    "after_identity": {
+     "account_id": null,
+     "name": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "id": true,
+     "name_prefix": true,
+     "target_key_arn": true,
+     "target_key_id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "api",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_kms_alias"
+  },
+  {
+   "address": "aws_kms_key.api",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "bypass_policy_lockout_safety_check": false,
+     "custom_key_store_id": null,
+     "customer_master_key_spec": "SYMMETRIC_DEFAULT",
+     "deletion_window_in_days": 30,
+     "description": "harbor-policy-assistant: ask function environment and API, function and flow logs",
+     "enable_key_rotation": true,
+     "is_enabled": true,
+     "key_usage": "ENCRYPT_DECRYPT",
+     "policy": "{\"Statement\":[{\"Action\":\"kms:*\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Resource\":\"*\",\"Sid\":\"AccountAdministration\"},{\"Action\":[\"kms:Encrypt\",\"kms:Decrypt\",\"kms:ReEncrypt*\",\"kms:GenerateDataKey*\",\"kms:Describe*\"],\"Condition\":{\"ArnLike\":{\"kms:EncryptionContext:aws:logs:arn\":\"arn:aws:logs:us-east-1:111122223333:log-group:*harbor-policy-assistant*\"}},\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"logs.us-east-1.amazonaws.com\"},\"Resource\":\"*\",\"Sid\":\"CloudWatchLogs\"}],\"Version\":\"2012-10-17\"}",
+     "region": "us-east-1",
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "timeouts": null,
+     "xks_key_id": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "id": true,
+     "key_id": true,
+     "multi_region": true,
+     "rotation_period_in_days": true,
+     "tags_all": {}
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "api",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_kms_key"
+  },
+  {
+   "address": "aws_lambda_function.ask",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "architectures": [
+      "arm64"
+     ],
+     "capacity_provider_config": [],
+     "code_signing_config_arn": null,
+     "dead_letter_config": [],
+     "description": null,
+     "durable_config": [],
+     "environment": [
+      {}
+     ],
+     "file_system_config": [],
+     "filename": "./build/harbor_rag.zip",
+     "function_name": "harbor-policy-assistant-ask",
+     "handler": "harbor_rag.handler.lambda_handler",
+     "image_config": [],
+     "image_uri": null,
+     "layers": null,
+     "logging_config": [
+      {
+       "application_log_level": null,
+       "log_format": "Text",
+       "log_group": "/aws/lambda/harbor-policy-assistant-ask",
+       "system_log_level": null
+      }
+     ],
+     "memory_size": 512,
+     "package_type": "Zip",
+     "publish": false,
+     "publish_to": null,
+     "region": "us-east-1",
+     "replace_security_groups_on_destroy": null,
+     "replacement_security_group_ids": null,
+     "reserved_concurrent_executions": 20,
+     "runtime": "python3.13",
+     "s3_bucket": null,
+     "s3_key": null,
+     "s3_object_version": null,
+     "skip_destroy": false,
+     "snap_start": [],
+     "source_code_hash": "PLACEHOLDER",
+     "source_kms_key_arn": null,
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "tenancy_config": [],
+     "timeout": 29,
+     "timeouts": null,
+     "tracing_config": [
+      {
+       "mode": "Active"
+      }
+     ],
+     "use_resource_timeout_for_propagation": null,
+     "vpc_config": [
+      {
+       "ipv6_allowed_for_dual_stack": false
+      }
+     ]
+    },
+    "after_identity": {
+     "account_id": null,
+     "function_name": null,
+     "region": null
+    },
+    "after_unknown": {
+     "architectures": [
+      false
+     ],
+     "arn": true,
+     "capacity_provider_config": [],
+     "code_sha256": true,
+     "dead_letter_config": [],
+     "durable_config": [],
+     "environment": [
+      {
+       "variables": true
+      }
+     ],
+     "ephemeral_storage": true,
+     "file_system_config": [],
+     "id": true,
+     "image_config": [],
+     "invoke_arn": true,
+     "kms_key_arn": true,
+     "last_modified": true,
+     "logging_config": [
+      {}
+     ],
+     "qualified_arn": true,
+     "qualified_invoke_arn": true,
+     "response_streaming_invoke_arn": true,
+     "role": true,
+     "signing_job_arn": true,
+     "signing_profile_version_arn": true,
+     "snap_start": [],
+     "source_code_size": true,
+     "tags_all": {},
+     "tenancy_config": [],
+     "tracing_config": [
+      {}
+     ],
+     "version": true,
+     "vpc_config": [
+      {
+       "security_group_ids": true,
+       "subnet_ids": true,
+       "vpc_id": true
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "ask",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_lambda_function"
+  },
+  {
+   "address": "aws_lambda_permission.api",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "action": "lambda:InvokeFunction",
+     "event_source_token": null,
+     "function_name": "harbor-policy-assistant-ask",
+     "function_url_auth_type": null,
+     "invoked_via_function_url": null,
+     "principal": "apigateway.amazonaws.com",
+     "principal_org_id": null,
+     "qualifier": null,
+     "region": "us-east-1",
+     "source_account": null,
+     "statement_id": "AllowPrivateApi",
+     "timeouts": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "function_name": null,
+     "qualifier": null,
+     "region": null,
+     "statement_id": null
+    },
+    "after_unknown": {
+     "id": true,
+     "source_arn": true,
+     "statement_id_prefix": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "api",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_lambda_permission"
+  },
+  {
+   "address": "aws_route_table.private",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "region": "us-east-1",
+     "route": [],
+     "tags": {
+      "Name": "harbor-policy-assistant-private"
+     },
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "Name": "harbor-policy-assistant-private",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "timeouts": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "id": true,
+     "owner_id": true,
+     "propagating_vgws": true,
+     "route": [],
+     "tags": {},
+     "tags_all": {},
+     "vpc_id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "private",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_route_table"
+  },
+  {
+   "address": "aws_route_table_association.private[0]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "gateway_id": null,
+     "region": "us-east-1",
+     "timeouts": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null
+    },
+    "after_unknown": {
+     "id": true,
+     "route_table_id": true,
+     "subnet_id": true
+    },
+    "before": null
+   },
+   "index": 0,
+   "mode": "managed",
+   "name": "private",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_route_table_association"
+  },
+  {
+   "address": "aws_route_table_association.private[1]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "gateway_id": null,
+     "region": "us-east-1",
+     "timeouts": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null
+    },
+    "after_unknown": {
+     "id": true,
+     "route_table_id": true,
+     "subnet_id": true
+    },
+    "before": null
+   },
+   "index": 1,
+   "mode": "managed",
+   "name": "private",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_route_table_association"
+  },
+  {
+   "address": "aws_security_group.endpoints",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "description": "Interface endpoints: HTTPS from inside the VPC",
+     "name": "harbor-policy-assistant-endpoints",
+     "region": "us-east-1",
+     "revoke_rules_on_delete": false,
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "timeouts": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "egress": true,
+     "id": true,
+     "ingress": true,
+     "name_prefix": true,
+     "owner_id": true,
+     "tags_all": {},
+     "vpc_id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "endpoints",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_security_group"
+  },
+  {
+   "address": "aws_security_group.function",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "description": "Ask function: HTTPS to the VPC endpoints only",
+     "name": "harbor-policy-assistant-ask-function",
+     "region": "us-east-1",
+     "revoke_rules_on_delete": false,
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "timeouts": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "egress": true,
+     "id": true,
+     "ingress": true,
+     "name_prefix": true,
+     "owner_id": true,
+     "tags_all": {},
+     "vpc_id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "function",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_security_group"
+  },
+  {
+   "address": "aws_subnet.private[0]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "assign_ipv6_address_on_creation": false,
+     "availability_zone_id": "use1-az1",
+     "cidr_block": "10.40.0.0/24",
+     "customer_owned_ipv4_pool": null,
+     "enable_dns64": false,
+     "enable_lni_at_device_index": null,
+     "enable_resource_name_dns_a_record_on_launch": false,
+     "enable_resource_name_dns_aaaa_record_on_launch": false,
+     "ipv4_ipam_pool_id": null,
+     "ipv4_netmask_length": null,
+     "ipv6_ipam_pool_id": null,
+     "ipv6_native": false,
+     "ipv6_netmask_length": null,
+     "map_customer_owned_ip_on_launch": null,
+     "map_public_ip_on_launch": false,
+     "outpost_arn": null,
+     "region": "us-east-1",
+     "tags": {
+      "Name": "harbor-policy-assistant-private-use1-az1"
+     },
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "Name": "harbor-policy-assistant-private-use1-az1",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "timeouts": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "availability_zone": true,
+     "id": true,
+     "ipv6_cidr_block": true,
+     "ipv6_cidr_block_association_id": true,
+     "owner_id": true,
+     "private_dns_hostname_type_on_launch": true,
+     "tags": {},
+     "tags_all": {},
+     "vpc_id": true
+    },
+    "before": null
+   },
+   "index": 0,
+   "mode": "managed",
+   "name": "private",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_subnet"
+  },
+  {
+   "address": "aws_subnet.private[1]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "assign_ipv6_address_on_creation": false,
+     "availability_zone_id": "use1-az2",
+     "cidr_block": "10.40.1.0/24",
+     "customer_owned_ipv4_pool": null,
+     "enable_dns64": false,
+     "enable_lni_at_device_index": null,
+     "enable_resource_name_dns_a_record_on_launch": false,
+     "enable_resource_name_dns_aaaa_record_on_launch": false,
+     "ipv4_ipam_pool_id": null,
+     "ipv4_netmask_length": null,
+     "ipv6_ipam_pool_id": null,
+     "ipv6_native": false,
+     "ipv6_netmask_length": null,
+     "map_customer_owned_ip_on_launch": null,
+     "map_public_ip_on_launch": false,
+     "outpost_arn": null,
+     "region": "us-east-1",
+     "tags": {
+      "Name": "harbor-policy-assistant-private-use1-az2"
+     },
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "Name": "harbor-policy-assistant-private-use1-az2",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "timeouts": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "availability_zone": true,
+     "id": true,
+     "ipv6_cidr_block": true,
+     "ipv6_cidr_block_association_id": true,
+     "owner_id": true,
+     "private_dns_hostname_type_on_launch": true,
+     "tags": {},
+     "tags_all": {},
+     "vpc_id": true
+    },
+    "before": null
+   },
+   "index": 1,
+   "mode": "managed",
+   "name": "private",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_subnet"
+  },
+  {
+   "address": "aws_vpc.this",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "assign_generated_ipv6_cidr_block": null,
+     "cidr_block": "10.40.0.0/16",
+     "enable_dns_hostnames": true,
+     "enable_dns_support": true,
+     "instance_tenancy": "default",
+     "ipv4_ipam_pool_id": null,
+     "ipv4_netmask_length": null,
+     "ipv6_ipam_pool_id": null,
+     "ipv6_netmask_length": null,
+     "region": "us-east-1",
+     "tags": {
+      "Name": "harbor-policy-assistant"
+     },
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "Name": "harbor-policy-assistant",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     }
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "default_network_acl_id": true,
+     "default_route_table_id": true,
+     "default_security_group_id": true,
+     "dhcp_options_id": true,
+     "enable_network_address_usage_metrics": true,
+     "id": true,
+     "ipv6_association_id": true,
+     "ipv6_cidr_block": true,
+     "ipv6_cidr_block_network_border_group": true,
+     "main_route_table_id": true,
+     "owner_id": true,
+     "tags": {},
+     "tags_all": {}
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "this",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_vpc"
+  },
+  {
+   "address": "aws_vpc_endpoint.interface[\"bedrock-agent-runtime\"]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "auto_accept": null,
+     "policy": "{\"Statement\":[{\"Action\":\"bedrock:Retrieve\",\"Condition\":{\"StringEquals\":{\"aws:PrincipalAccount\":\"111122223333\"}},\"Effect\":\"Allow\",\"Principal\":\"*\",\"Resource\":\"arn:aws:bedrock:us-east-1:111122223333:knowledge-base/KBHARBOR01\"}],\"Version\":\"2012-10-17\"}",
+     "private_dns_enabled": true,
+     "region": "us-east-1",
+     "resource_configuration_arn": null,
+     "service_name": "com.amazonaws.us-east-1.bedrock-agent-runtime",
+     "service_network_arn": null,
+     "tags": {
+      "Name": "harbor-policy-assistant-bedrock-agent-runtime"
+     },
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "Name": "harbor-policy-assistant-bedrock-agent-runtime",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "timeouts": null,
+     "vpc_endpoint_type": "Interface"
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "cidr_blocks": true,
+     "dns_entry": true,
+     "dns_options": true,
+     "id": true,
+     "ip_address_type": true,
+     "network_interface_ids": true,
+     "owner_id": true,
+     "prefix_list_id": true,
+     "requester_managed": true,
+     "route_table_ids": true,
+     "security_group_ids": true,
+     "service_region": true,
+     "state": true,
+     "subnet_configuration": true,
+     "subnet_ids": true,
+     "tags": {},
+     "tags_all": {},
+     "vpc_id": true
+    },
+    "before": null
+   },
+   "index": "bedrock-agent-runtime",
+   "mode": "managed",
+   "name": "interface",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_vpc_endpoint"
+  },
+  {
+   "address": "aws_vpc_endpoint.interface[\"bedrock-runtime\"]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "auto_accept": null,
+     "private_dns_enabled": true,
+     "region": "us-east-1",
+     "resource_configuration_arn": null,
+     "service_name": "com.amazonaws.us-east-1.bedrock-runtime",
+     "service_network_arn": null,
+     "tags": {
+      "Name": "harbor-policy-assistant-bedrock-runtime"
+     },
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "Name": "harbor-policy-assistant-bedrock-runtime",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "timeouts": null,
+     "vpc_endpoint_type": "Interface"
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "cidr_blocks": true,
+     "dns_entry": true,
+     "dns_options": true,
+     "id": true,
+     "ip_address_type": true,
+     "network_interface_ids": true,
+     "owner_id": true,
+     "policy": true,
+     "prefix_list_id": true,
+     "requester_managed": true,
+     "route_table_ids": true,
+     "security_group_ids": true,
+     "service_region": true,
+     "state": true,
+     "subnet_configuration": true,
+     "subnet_ids": true,
+     "tags": {},
+     "tags_all": {},
+     "vpc_id": true
+    },
+    "before": null
+   },
+   "index": "bedrock-runtime",
+   "mode": "managed",
+   "name": "interface",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_vpc_endpoint"
+  },
+  {
+   "address": "aws_vpc_endpoint.interface[\"execute-api\"]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "auto_accept": null,
+     "policy": "{\"Statement\":[{\"Action\":\"execute-api:Invoke\",\"Condition\":{\"StringEquals\":{\"aws:PrincipalAccount\":\"111122223333\"}},\"Effect\":\"Allow\",\"Principal\":\"*\",\"Resource\":\"arn:aws:execute-api:us-east-1:111122223333:*/*\"}],\"Version\":\"2012-10-17\"}",
+     "private_dns_enabled": true,
+     "region": "us-east-1",
+     "resource_configuration_arn": null,
+     "service_name": "com.amazonaws.us-east-1.execute-api",
+     "service_network_arn": null,
+     "tags": {
+      "Name": "harbor-policy-assistant-execute-api"
+     },
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "Name": "harbor-policy-assistant-execute-api",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "timeouts": null,
+     "vpc_endpoint_type": "Interface"
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "cidr_blocks": true,
+     "dns_entry": true,
+     "dns_options": true,
+     "id": true,
+     "ip_address_type": true,
+     "network_interface_ids": true,
+     "owner_id": true,
+     "prefix_list_id": true,
+     "requester_managed": true,
+     "route_table_ids": true,
+     "security_group_ids": true,
+     "service_region": true,
+     "state": true,
+     "subnet_configuration": true,
+     "subnet_ids": true,
+     "tags": {},
+     "tags_all": {},
+     "vpc_id": true
+    },
+    "before": null
+   },
+   "index": "execute-api",
+   "mode": "managed",
+   "name": "interface",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_vpc_endpoint"
+  },
+  {
+   "address": "aws_vpc_security_group_egress_rule.function_to_endpoints",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "cidr_ipv4": null,
+     "cidr_ipv6": null,
+     "description": "HTTPS to the Bedrock interface endpoints",
+     "from_port": 443,
+     "ip_protocol": "tcp",
+     "prefix_list_id": null,
+     "region": "us-east-1",
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "to_port": 443
+    },
+    "after_unknown": {
+     "arn": true,
+     "id": true,
+     "referenced_security_group_id": true,
+     "security_group_id": true,
+     "security_group_rule_id": true,
+     "tags_all": {}
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "function_to_endpoints",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_vpc_security_group_egress_rule"
+  },
+  {
+   "address": "aws_vpc_security_group_ingress_rule.endpoints_from_vpc",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "cidr_ipv4": "10.40.0.0/16",
+     "cidr_ipv6": null,
+     "description": "HTTPS from the VPC (the function, and staff clients routed into the VPC)",
+     "from_port": 443,
+     "ip_protocol": "tcp",
+     "prefix_list_id": null,
+     "referenced_security_group_id": null,
+     "region": "us-east-1",
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "api"
+     },
+     "to_port": 443
+    },
+    "after_unknown": {
+     "arn": true,
+     "id": true,
+     "security_group_id": true,
+     "security_group_rule_id": true,
+     "tags_all": {}
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "endpoints_from_vpc",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_vpc_security_group_ingress_rule"
+  }
+ ],
+ "terraform_version": "1.14.5"
+}

@@ -3,12 +3,15 @@
 Request:  {"question": "...", "doc_type": "returns"}   (doc_type optional; one of config.DOC_TYPES)
 Response: {"answer", "citations", "guardrail", "refused", "reason", "usage", "redacted"}
 
-Logs are JSON lines with the redacted question only, plus CloudWatch embedded-metric-format records for tokens,
-latency, refusals and guardrail interventions.
+Logs never contain the question text, redacted or not: the regex pre-filter cannot catch names or street addresses.
+The `ask` line identifies the question by a SHA-256 prefix (to find a question a user reports: hash it the same way),
+its length and the PII types the pre-filter found. CloudWatch embedded-metric-format records carry tokens, latency,
+refusals and guardrail interventions.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import time
@@ -17,11 +20,11 @@ from typing import Any
 
 from harbor_rag.aws import Boto3Bedrock
 from harbor_rag.config import DOC_TYPES, Settings
-from harbor_rag.pii import redact
 from harbor_rag.port import BedrockPort
 from harbor_rag.service import Answer, InvalidQuestionError, ThrottledError, UpstreamError, answer_question
 
 METRIC_NAMESPACE = "HarborGoods/PolicyAssistant"
+QUESTION_HASH_CHARS = 16
 
 
 @cache
@@ -42,13 +45,21 @@ def _response(status: int, body: dict[str, Any], headers: dict[str, str] | None 
     }
 
 
-def _emit(answer: Answer, redacted_question: str, latency_ms: int, request_id: str) -> None:
+def question_fingerprint(question: str) -> dict[str, Any]:
+    """What the logs keep about a question instead of its text: a hash prefix and the length of the stripped text."""
+    text = question.strip()
+    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:QUESTION_HASH_CHARS]
+    return {"question_sha256": digest, "question_chars": len(text)}
+
+
+def _emit(answer: Answer, question: str, doc_type: str | None, latency_ms: int, request_id: str) -> None:
     print(
         json.dumps(
             {
                 "event": "ask",
                 "request_id": request_id,
-                "question": redacted_question,
+                **question_fingerprint(question),
+                "doc_type": doc_type,
                 "reason": answer.reason,
                 "guardrail": answer.guardrail["action"],
                 "findings": answer.guardrail["findings"],
@@ -110,7 +121,7 @@ def handle(event: dict[str, Any], request_id: str, port: BedrockPort, settings: 
         print(json.dumps({"event": "ask_upstream_error", "request_id": request_id, "code": str(error)}))
         return _response(502, {"error": "the assistant could not answer, retry or contact Store Support"})
     latency_ms = int((time.monotonic() - started) * 1000)
-    _emit(answer, redact(body["question"], settings.pii_patterns).text, latency_ms, request_id)
+    _emit(answer, body["question"], doc_type, latency_ms, request_id)
     return _response(200, answer.to_dict())
 
 

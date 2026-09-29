@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from harbor_rag.config import Settings
 from harbor_rag.service import (
+    EXCERPT_CHARS,
     REFUSAL,
     InvalidQuestionError,
     ThrottledError,
@@ -156,3 +159,30 @@ def test_context_over_budget_is_trimmed(settings: Settings) -> None:
     ask(port, tight)
     context = port.converse_calls[0]["messages"][0]["content"][0]["guardContent"]["text"]["text"]
     assert len(context) <= 300 * 4 + 100
+
+
+def test_citation_excerpts_are_redacted(settings: Settings) -> None:
+    """Sources are grounding-only, so the guardrail never masks them: the excerpt goes through the pre-filter."""
+    retrieved = fixture("retrieve_returns")
+    first = retrieved["retrievalResults"][0]["content"]
+    first["text"] = "Escalations go to returns.lead@example.com or (555) 010-4477. " + first["text"]
+    port = FakeBedrock([retrieved], [fixture("converse_answer")])
+    answer = ask(port, settings)
+    assert answer.reason == "answered"
+    excerpt = answer.citations[0]["excerpt"]
+    assert excerpt.startswith("Escalations go to {EMAIL} or {PHONE}. Customers may return")
+    assert "returns.lead@example.com" not in json.dumps(answer.to_dict())
+    assert "010-4477" not in json.dumps(answer.to_dict())
+    assert len(excerpt) <= EXCERPT_CHARS
+
+
+def test_a_value_at_the_excerpt_cut_is_redacted_whole(settings: Settings) -> None:
+    """Unredacted, the address would straddle the cut and its first half would no longer match the email pattern."""
+    retrieved = fixture("retrieve_returns")
+    first = retrieved["retrievalResults"][0]["content"]
+    first["text"] = "x" * (EXCERPT_CHARS - 10) + " jane.doe@example.com " + first["text"]
+    port = FakeBedrock([retrieved], [fixture("converse_answer")])
+    excerpt = ask(port, settings).citations[0]["excerpt"]
+    assert "jane" not in excerpt
+    assert "@" not in excerpt
+    assert "{EMAIL}" in excerpt

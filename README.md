@@ -23,7 +23,7 @@ Bases with Amazon S3 Vectors and a Bedrock guardrail, defined in Terraform and e
   comparison of S3 Vectors, OpenSearch Serverless and Aurora pgvector.
 - **Private by construction:** a `PRIVATE` REST API with IAM auth behind a VPC endpoint, a function with no route to
   the internet, KMS on every store and log, and IAM scoped to one knowledge base, profile, model and guardrail.
-- **Tested without an AWS account:** 115 Python tests, 20 mocked `terraform test` runs, Checkov, Trivy, tflint,
+- **Tested without an AWS account:** 139 Python tests, 20 mocked `terraform test` runs, Checkov, Trivy, tflint,
   Semgrep, ruff and mypy behind one `make verify`.
 
 ## Inspect the deliverable
@@ -53,7 +53,7 @@ Terraform.
 | Every answer cites a policy document | Numbered sources, citation mapping, refusal when no valid citation | `tests/test_service.py`, evaluation gates |
 | Questions the policies cannot answer are refused | Relevance cut-off before the model, `NO_ANSWER` handling | Gate "refused unanswerable" (6 of 6 offline) |
 | Retrieval quality is measured and cannot regress unnoticed | Golden set, recall@5, MRR, citation precision thresholds | `make data-check`, ADR 0004 |
-| Customer PII stays out of answers and logs | Guardrail masking and blocking, local pre-filter before `Retrieve` and logs | `tests/test_pii.py`, `tests/test_guardrail_policy.py` |
+| Customer PII stays out of answers and logs | Guardrail masking and blocking on the question and the answer; local pre-filter before `Retrieve` and on citation excerpts; logs keep a hash, the length and the PII types of the question, never its text | `tests/test_pii.py`, `tests/test_guardrail_policy.py`, `tests/test_handler.py`, `tests/test_service.py` |
 | Legal advice, competitor pricing and employee records are declined | Denied topics with examples | Policy tests; red-team set in the live run |
 | Nothing is reachable from the internet | Private API, IAM auth, VPC endpoints, no gateways | `terraform test`, live-plan pre-flight |
 | Cost per question is known and bounded | Cost model, inference profile tags, budget, reserved concurrency | `tests/test_cost_model.py`, report section 5 |
@@ -79,8 +79,9 @@ flowchart LR
 
 A question arrives signed with SigV4 through the `execute-api` endpoint. The function redacts PII, calls `Retrieve`,
 keeps the chunks that clear the relevance cut-off, and calls `Converse` through an application inference profile with
-the guardrail attached; the context is marked as the grounding source. It returns the answer with its citations and the
-guardrail verdict, and logs only the redacted question with token and latency metrics. Uploading a policy document
+the guardrail attached; the context is marked as the grounding source and the question as the query the guardrail
+screens. It returns the answer with its citations and the
+guardrail verdict, and logs a hash of the question (never its text) with token and latency metrics. Uploading a policy document
 starts an ingestion job. A CloudWatch dashboard, four alarms, a dead-letter-queue alarm and a monthly budget cover
 operations.
 
@@ -166,7 +167,7 @@ Architecture decision records follow the *Fundamentals of Software Architecture*
 
 | Gate | Runs in | Why |
 | --- | --- | --- |
-| pytest (115 tests) | `make test`, CI `verify` job | Service branches with a fake Bedrock port, adapters with botocore `Stubber`, guardrail policy, pre-filter, evaluation, cost model, live pre-flight |
+| pytest (139 tests) | `make test`, CI `verify` job | Service branches with a fake Bedrock port, adapters with botocore `Stubber`, guardrail policy, pre-filter, evaluation, cost model, live pre-flight |
 | Evaluation gates | `make data-check`, CI `verify` job | Recall@5, MRR, citation precision, relevant citations, refusals against `data/eval.yaml` |
 | Report freshness | `make report-check`, shared `report` workflow | Report tables regenerate from the code; the PDF matches the Markdown |
 | ruff, mypy (strict) | `make lint types`, pre-commit | Style, bugs and types in the Lambda and evaluation code |

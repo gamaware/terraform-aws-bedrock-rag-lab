@@ -28,7 +28,8 @@ Titan Text Embeddings V2 in the Bedrock console.
 4. Runs the golden-set evaluation against the deployed knowledge base, model and guardrail
    (`harbor_eval.evaluate --live --check`) and fails below the offline thresholds or the live-only answer threshold;
    results go to `.eval-runs/<run>/evaluation.json`.
-5. Sends the 18 red-team cases through `ApplyGuardrail` and fails on any unexpected verdict.
+5. Sends the 18 red-team cases through `ApplyGuardrail`, in the same blocks and qualifiers as the production
+   `Converse` request, and fails on any unexpected verdict.
 6. Calls `POST /ask` through API Gateway's test-invoke (the API has no public URL) and checks for a `200` with at least
    one citation.
 7. Destroys the three stacks in reverse order on any exit, then lists anything still tagged with the run.

@@ -17,28 +17,39 @@ resource "aws_api_gateway_rest_api" "this" {
   }
 }
 
+# Built with aws_iam_policy_document so the live-test pre-flight can read the statements while the endpoint ID is
+# unknown.
+data "aws_iam_policy_document" "api" {
+  statement {
+    sid       = "AllowSignedCallsFromThisAccount"
+    effect    = "Allow"
+    actions   = ["execute-api:Invoke"]
+    resources = ["execute-api:/*"]
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:${local.partition}:iam::${local.account_id}:root"]
+    }
+  }
+  statement {
+    sid       = "DenyOutsideTheVpcEndpoint"
+    effect    = "Deny"
+    actions   = ["execute-api:Invoke"]
+    resources = ["execute-api:/*"]
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:SourceVpce"
+      values   = [aws_vpc_endpoint.interface["execute-api"].id]
+    }
+  }
+}
+
 resource "aws_api_gateway_rest_api_policy" "this" {
   rest_api_id = aws_api_gateway_rest_api.this.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "AllowSignedCallsFromThisAccount"
-        Effect    = "Allow"
-        Principal = { AWS = "arn:${local.partition}:iam::${local.account_id}:root" }
-        Action    = "execute-api:Invoke"
-        Resource  = "execute-api:/*"
-      },
-      {
-        Sid       = "DenyOutsideTheVpcEndpoint"
-        Effect    = "Deny"
-        Principal = "*"
-        Action    = "execute-api:Invoke"
-        Resource  = "execute-api:/*"
-        Condition = { StringNotEquals = { "aws:SourceVpce" = aws_vpc_endpoint.interface["execute-api"].id } }
-      },
-    ]
-  })
+  policy      = data.aws_iam_policy_document.api.json
 }
 
 resource "aws_api_gateway_resource" "ask" {

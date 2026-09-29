@@ -63,15 +63,16 @@ run "api_is_private_with_iam_auth" {
   }
 
   assert {
-    condition = anytrue([for s in jsondecode(aws_api_gateway_rest_api_policy.this.policy).Statement :
-      s.Effect == "Deny" && s.Principal == "*" && s.Condition.StringNotEquals["aws:SourceVpce"] == "vpce-0a1b2c3d4e5f60718"
-    ])
+    condition = anytrue([for s in data.aws_iam_policy_document.api.statement :
+      s.effect == "Deny" && one(s.principals).type == "*" && anytrue([for c in s.condition :
+        c.test == "StringNotEquals" && c.variable == "aws:SourceVpce" && tolist(c.values) == tolist(["vpce-0a1b2c3d4e5f60718"])
+    ])])
     error_message = "The resource policy must deny calls that do not come through the VPC endpoint."
   }
 
   assert {
-    condition = alltrue([for s in jsondecode(aws_api_gateway_rest_api_policy.this.policy).Statement :
-      s.Effect == "Deny" || s.Principal.AWS == "arn:aws:iam::111122223333:root"
+    condition = alltrue([for s in data.aws_iam_policy_document.api.statement :
+      s.effect == "Deny" || (one(s.principals).type == "AWS" && tolist(one(s.principals).identifiers) == tolist(["arn:aws:iam::111122223333:root"]))
     ])
     error_message = "Only principals of this account may be allowed."
   }

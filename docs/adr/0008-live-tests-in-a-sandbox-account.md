@@ -18,7 +18,10 @@ wrong account could affect other workloads.
   no public subnet or default route, API endpoint `PRIVATE`, no bucket, queue, topic or API policy open to everyone,
   public access blocks fully on, no Route 53, and every taggable resource tagged `Lab`, `Ephemeral=true`,
   `purpose=portfolio-test` and the run ID.
-  Unknown values count as violations.
+  Unknown values count as violations, with one decidable exception: a policy built with `aws_iam_policy_document`
+  whose only unknowns are values the configuration takes from managed resources (bucket, topic or endpoint IDs in a
+  fresh plan). Its statements are checked from the plan, and a `${...}` policy variable in a condition does not count
+  as a restriction. Resource policies in the stacks are written with that data source for this reason.
 - The live run leaves the account-level invocation logging setting as it is.
 - Teardown runs on any exit and then lists anything still tagged with the run.
 
@@ -30,7 +33,8 @@ wrong account could affect other workloads.
 
 ## Compliance
 
-- `tests/test_live_plan_check.py` (part of `make verify`) covers the pre-flight checker.
+- `tests/test_live_plan_check.py` (part of `make verify`) covers the pre-flight checker, including fresh plans of the
+  `data` and `api` stacks (`tests/fixtures/plans`) that must pass.
 - `scripts/test-live.sh` exits before any apply when the account does not match or the checker reports a violation.
 
 ## Notes

@@ -64,27 +64,41 @@ resource "aws_sns_topic" "alerts" {
   kms_master_key_id = aws_kms_key.data.arn
 }
 
+# Built with aws_iam_policy_document so the live-test pre-flight can read the statements while the topic ARN is unknown.
+data "aws_iam_policy_document" "alerts" {
+  statement {
+    sid       = "AlarmsAndBudgetsInThisAccount"
+    effect    = "Allow"
+    actions   = ["sns:Publish"]
+    resources = [aws_sns_topic.alerts.arn]
+    principals {
+      type        = "Service"
+      identifiers = ["cloudwatch.amazonaws.com", "budgets.amazonaws.com"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [local.account_id]
+    }
+  }
+  statement {
+    sid       = "TlsOnly"
+    effect    = "Deny"
+    actions   = ["sns:Publish"]
+    resources = [aws_sns_topic.alerts.arn]
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
+
 resource "aws_sns_topic_policy" "alerts" {
-  arn = aws_sns_topic.alerts.arn
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "AlarmsAndBudgetsInThisAccount"
-        Effect    = "Allow"
-        Principal = { Service = ["cloudwatch.amazonaws.com", "budgets.amazonaws.com"] }
-        Action    = "sns:Publish"
-        Resource  = aws_sns_topic.alerts.arn
-        Condition = { StringEquals = { "aws:SourceAccount" = local.account_id } }
-      },
-      {
-        Sid       = "TlsOnly"
-        Effect    = "Deny"
-        Principal = "*"
-        Action    = "sns:Publish"
-        Resource  = aws_sns_topic.alerts.arn
-        Condition = { Bool = { "aws:SecureTransport" = "false" } }
-      },
-    ]
-  })
+  arn    = aws_sns_topic.alerts.arn
+  policy = data.aws_iam_policy_document.alerts.json
 }

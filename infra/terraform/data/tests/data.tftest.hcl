@@ -77,16 +77,20 @@ run "every_bucket_policy_denies_plain_http" {
   command = plan
 
   assert {
-    condition = alltrue([for p in [aws_s3_bucket_policy.policies, aws_s3_bucket_policy.invocation_logs, aws_s3_bucket_policy.access_logs] :
-      anytrue([for s in jsondecode(p.policy).Statement :
-        s.Effect == "Deny" && try(s.Condition.Bool["aws:SecureTransport"], "") == "false"
-    ])])
-    error_message = "Each bucket policy must deny requests without TLS."
+    condition = alltrue([for d in [data.aws_iam_policy_document.policies, data.aws_iam_policy_document.invocation_logs, data.aws_iam_policy_document.access_logs, data.aws_iam_policy_document.alerts] :
+      anytrue([for s in d.statement :
+        s.effect == "Deny" && one(s.principals).type == "*" && anytrue([for c in s.condition :
+          c.test == "Bool" && c.variable == "aws:SecureTransport" && tolist(c.values) == tolist(["false"])
+    ])])])
+    error_message = "Each bucket and topic policy must deny requests without TLS."
   }
 
   assert {
-    condition = alltrue([for s in jsondecode(aws_s3_bucket_policy.invocation_logs.policy).Statement :
-      s.Effect == "Deny" || (s.Principal.Service == "bedrock.amazonaws.com" && s.Condition.StringEquals["aws:SourceAccount"] == "111122223333")
+    condition = alltrue([for s in data.aws_iam_policy_document.invocation_logs.statement :
+      s.effect == "Deny" || (
+        one(s.principals).type == "Service" && tolist(one(s.principals).identifiers) == tolist(["bedrock.amazonaws.com"]) &&
+        anytrue([for c in s.condition : c.variable == "aws:SourceAccount" && tolist(c.values) == tolist(["111122223333"])])
+      )
     ])
     error_message = "Only Bedrock in this account may write invocation logs."
   }

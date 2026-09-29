@@ -21,7 +21,10 @@ guardrail:
 - **Citations enforced in code:** the answer must cite at least one source number that was given; otherwise it is
   replaced by the refusal.
 - **Guardrail with grounding:** the context goes in a `guardContent` block qualified `grounding_source` and the question
-  in one qualified `query`, so the contextual grounding check compares the answer with exactly what the model saw.
+  in one qualified `query` and `guard_content`, so the contextual grounding check compares the answer with exactly
+  what the model saw. `query` alone would hide the question from every other policy (prompt attack, denied topics,
+  content filters, PII); `guard_content` puts it in front of them. The sources stay grounding-only: they are the
+  company's own documents, and a card-number pattern in one of them must not block every question.
 - **Retries** for throttling and transient errors live in the function (full-jitter backoff); botocore retries are off
   so attempts are not multiplied.
 - All Bedrock calls go through a `BedrockPort` interface, so every branch is unit-tested with a fake.

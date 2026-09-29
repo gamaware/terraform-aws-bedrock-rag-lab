@@ -2,6 +2,12 @@
 action with `live_action`. Masking PII (ANONYMIZE) also counts as an intervention, so every PII case expects
 INTERVENED. Makes AWS calls; `make test-live` runs it against the sandbox deployment only.
 
+Each case goes through the guardrail in the block shape production sends: `apply_guardrail_request` takes the
+`guardContent` blocks of the `Converse` request that `harbor_rag.prompt.build_converse_request` builds, with the case as
+the question and one policy excerpt as the grounding source. A case the guardrail would not see in production (a
+question qualified `query` only, for example) therefore fails here too. The case text is sent without the local
+pre-filter: the run measures the guardrail as the control of record for what the pre-filter misses.
+
     python -m harbor_eval.guardrail_live --guardrail-id ID --guardrail-version 1 --profile NAME
 """
 
@@ -13,12 +19,40 @@ import sys
 from typing import Any
 
 from harbor_eval import DATA
+from harbor_rag.prompt import Source, build_converse_request
 
 CASES = DATA / "fixtures" / "guardrail_cases.jsonl"
+GROUNDING_SOURCE = Source(
+    index=1,
+    uri="s3://example-bucket/returns/returns-standard-window.md",
+    title="Standard return window",
+    doc_type="returns",
+    text="Customers can return most items within 30 days of the delivery date. A receipt or order number is required.",
+    score=1.0,
+)
 
 
 def load_cases() -> list[dict[str, Any]]:
     return [json.loads(line) for line in CASES.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def apply_guardrail_request(text: str, *, guardrail_id: str, guardrail_version: str) -> dict[str, Any]:
+    """An `ApplyGuardrail` request with the same guarded blocks and qualifiers as the production `Converse` request."""
+    converse = build_converse_request(
+        question=text,
+        sources=[GROUNDING_SOURCE],
+        model_id="unused",
+        guardrail_id=guardrail_id,
+        guardrail_version=guardrail_version,
+        max_output_tokens=1,
+    )
+    content = [block["guardContent"] for block in converse["messages"][0]["content"] if "guardContent" in block]
+    return {
+        "guardrailIdentifier": guardrail_id,
+        "guardrailVersion": guardrail_version,
+        "source": "INPUT",
+        "content": content,
+    }
 
 
 def main(argv: list[str] | None = None) -> int:  # pragma: no cover - live only
@@ -34,10 +68,9 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - live only
     failures = 0
     for case in load_cases():
         response = client.apply_guardrail(
-            guardrailIdentifier=args.guardrail_id,
-            guardrailVersion=args.guardrail_version,
-            source="INPUT",
-            content=[{"text": {"text": case["text"]}}],
+            **apply_guardrail_request(
+                case["text"], guardrail_id=args.guardrail_id, guardrail_version=args.guardrail_version
+            )
         )
         action = "INTERVENED" if response["action"] == "GUARDRAIL_INTERVENED" else "NONE"
         ok = action == case["live_action"]
