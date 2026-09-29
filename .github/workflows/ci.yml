@@ -20,25 +20,25 @@ jobs:
     name: lint-docs
     permissions:
       contents: read
-    uses: gamaware/.github/.github/workflows/lint-docs.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
+    uses: gamaware/.github/.github/workflows/lint-docs.yml@01271d87e89c5f893e1e3a92eb6ba4d484286514 # main (01271d8)
 
   lint-actions:
     name: lint-actions
     permissions:
       contents: read
-    uses: gamaware/.github/.github/workflows/lint-actions.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
+    uses: gamaware/.github/.github/workflows/lint-actions.yml@01271d87e89c5f893e1e3a92eb6ba4d484286514 # main (01271d8)
 
   secrets:
     name: secrets
     permissions:
       contents: read
-    uses: gamaware/.github/.github/workflows/secrets.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
+    uses: gamaware/.github/.github/workflows/secrets.yml@01271d87e89c5f893e1e3a92eb6ba4d484286514 # main (01271d8)
 
   security:
     name: security
     permissions:
       contents: read
-    uses: gamaware/.github/.github/workflows/security.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
+    uses: gamaware/.github/.github/workflows/security.yml@01271d87e89c5f893e1e3a92eb6ba4d484286514 # main (01271d8)
     with:
       checkov-config: .checkov.yaml
 
@@ -46,7 +46,7 @@ jobs:
     name: terraform
     permissions:
       contents: read
-    uses: gamaware/.github/.github/workflows/terraform.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
+    uses: gamaware/.github/.github/workflows/terraform.yml@01271d87e89c5f893e1e3a92eb6ba4d484286514 # main (01271d8)
     with:
       working-directories: '["infra/terraform/data", "infra/terraform/knowledge-base", "infra/terraform/api"]'
       terraform-version: 1.14.5
@@ -58,7 +58,7 @@ jobs:
     name: report
     permissions:
       contents: read
-    uses: gamaware/.github/.github/workflows/report.yml@1e2fe2d99f7772ad59b896f332557457ebcbdde9
+    uses: gamaware/.github/.github/workflows/report.yml@01271d87e89c5f893e1e3a92eb6ba4d484286514 # main (01271d8)
     with:
       report-path: report/REPORT.md
       pandoc-args: >-

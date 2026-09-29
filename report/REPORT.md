@@ -244,4 +244,3 @@ The evaluation gate stopped the run before the guardrail red-team set and the `P
 checks still need a live run. Two fixes were needed to deploy: the KMS key policy now accepts the S3 Vectors index
 ARN as the indexing service's source, and the inference profile description no longer uses characters the Bedrock
 API rejects. The run cost well under USD 1.
-

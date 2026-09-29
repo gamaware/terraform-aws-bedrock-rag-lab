@@ -78,6 +78,8 @@ Terraform.
 
 ## Architecture
 
+![Animated flow: ingest policies, answer with citations or refuse](docs/diagrams/architecture-animated.svg)
+
 ```mermaid
 flowchart LR
   staff["Store staff tools<br/>(corporate network, SigV4)"] --> vpce_api["execute-api<br/>VPC endpoint"]
