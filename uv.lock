@@ -6,6 +6,16 @@ resolution-markers = [
     "python_full_version < '3.15'",
 ]
 
+[options]
+exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
+exclude-newer-span = "P7D"
+
+[options.exclude-newer-package]
+boto3 = false
+boto3-stubs = false
+botocore = false
+ruff = false
+
 [[package]]
 name = "ast-serialize"
 version = "0.11.2"
@@ -294,11 +304,11 @@ wheels = [
 
 [[package]]
 name = "mypy-boto3-bedrock-agent"
-version = "1.43.103"
+version = "1.43.92"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c4/66/be05d3854ab7c2ee48dfdac383de1f2d9cd947e369b76304ab52c27d8ce5/mypy_boto3_bedrock_agent-1.43.103.tar.gz", hash = "sha256:846b5f30de4c17066a9fd3558664a0d284a435491a2119117a68daf11350399f", size = 56692, upload-time = "2026-09-25T20:43:53.72Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/24/65/ae26846be84bf0fb777d1aa067cd36c396bd664890601ca4f23c76380d28/mypy_boto3_bedrock_agent-1.43.92.tar.gz", hash = "sha256:336ee5fed49c2e220190e809a8612efd8f3cb07919eb349a5818b90111d3e635", size = 55315, upload-time = "2026-09-10T20:00:31.369Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6e/21/147e27cdeb9ee25de8c15d125702c2716e69ab2a1cf0a827bd53f47189f6/mypy_boto3_bedrock_agent-1.43.103-py3-none-any.whl", hash = "sha256:4dbb094a40ebdb68b992b96c4b75209ea8a02461d95edf521c99af15160b93b8", size = 63897, upload-time = "2026-09-25T20:43:52.221Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/23/ec2131218f71c2ca4a63a7e819b943c239c10fdf6adf1e70391eb3bf9076/mypy_boto3_bedrock_agent-1.43.92-py3-none-any.whl", hash = "sha256:b84814fd05a9deb35e49bc412710d9ea3762e8018afa7cd169fb4b8fcdb74263", size = 62241, upload-time = "2026-09-10T20:00:27.248Z" },
 ]
 
 [[package]]

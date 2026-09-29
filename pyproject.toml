@@ -19,6 +19,8 @@ dev = [
 ]
 
 [tool.uv]
+exclude-newer = "7 days"
+exclude-newer-package = { boto3 = false, boto3-stubs = false, ruff = false, botocore = false }
 package = false
 
 [tool.pytest.ini_options]
