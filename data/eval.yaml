@@ -1,0 +1,24 @@
+# Evaluation settings and pass thresholds (ADR 0004). `make eval` fails when a metric of the chosen chunking strategy
+# drops below its threshold. Thresholds sit a margin below the recorded offline scores so noise from a corpus edit
+# does not fail CI, while a real regression (a lost document, a broken chunker, a selection bug) does.
+
+strategy: fixed-100
+number_of_results: 8
+
+# Context selection used offline. The live knowledge base returns scores on a different scale; the live values are
+# Terraform variables (min_score, relative_floor) calibrated with `make test-live` (docs/runbook.md).
+offline_selection:
+  min_score: 0.3
+  relative_floor: 0.85
+  max_sources: 3
+
+thresholds:
+  recall_at_5: 0.9
+  mrr: 0.8
+  citation_precision: 0.7
+  answered_with_relevant_citation: 0.8
+  refusal_on_unanswerable: 0.8
+
+# Gated only in the live run, where a real model writes the answers.
+live_thresholds:
+  answer_contains_expected: 0.8

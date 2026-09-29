@@ -1,0 +1,5 @@
+name   = "harbor-policy-assistant"
+region = "us-east-1"
+tags = {
+  cost-center = "store-support"
+}

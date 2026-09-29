@@ -1,0 +1,8 @@
+# Default gitleaks rules, plus one path exception: the detect-secrets baseline
+# stores hashes of reviewed false positives, which look like API keys.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "detect-secrets baseline holds hashes, not secrets"
+paths = ['''^\.secrets\.baseline$''']

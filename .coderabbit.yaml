@@ -1,0 +1,38 @@
+language: en-US
+reviews:
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: "src/harbor_rag/**/*.py"
+      instructions: >-
+        Lambda code: standard library plus boto3 from the runtime only. The question is redacted before Retrieve and
+        never logged as text (hash, length and PII types only). No answer without at least one valid citation. Errors returned to callers must not leak
+        internal details. Every behavior change needs a unit test with the FakeBedrock port.
+    - path: "src/harbor_eval/**/*.py"
+      instructions: >-
+        Offline evaluation and cost model. No network calls unless --live is passed. Numbers printed here feed
+        report/REPORT.md; a change must keep `make report-data --check` passing.
+    - path: "config/guardrail.yaml"
+      instructions: >-
+        Single source of the guardrail policy for Terraform and the local PII pre-filter. Every denied topic needs
+        examples; every PII entity needs a pre-filter pattern or a stated reason it has none.
+    - path: "infra/terraform/**/*.tf"
+      instructions: >-
+        Check IAM access is scoped to named resources, KMS encryption on every store and log group, the API stays
+        PRIVATE with AWS_IAM auth, and every Checkov skip carries a reason next to the resource. New behavior needs a
+        terraform test assertion.
+    - path: "infra/terraform/**/tests/*.tftest.hcl"
+      instructions: >-
+        Tests must use mock_provider only and must not reach AWS.
+    - path: ".github/workflows/*.yml"
+      instructions: >-
+        Actions pinned by full SHA, permissions {} at workflow level, timeout-minutes on every job, event data
+        through env. Pull request workflows must never get id-token or AWS credentials.
+    - path: "**/*.sh"
+      instructions: >-
+        Must pass shellcheck and shellharden; quote variables; use arrays for arguments.
+    - path: "**/*.md"
+      instructions: >-
+        Lines up to 120 characters (tables exempt). Fictional names only (Harbor Goods, example.com, AWS
+        documentation account IDs). No dates.

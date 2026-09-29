@@ -1,0 +1,7 @@
+{
+  "output": {"message": {"role": "assistant", "content": [{"text": "Most items can be returned within 30 days of purchase for a full refund; Gold loyalty members get 45 days [1]. Purchases made in November and December can be returned until the end of January [2]."}]}},
+  "stopReason": "end_turn",
+  "usage": {"inputTokens": 412, "outputTokens": 58, "totalTokens": 470},
+  "metrics": {"latencyMs": 812},
+  "trace": {"guardrail": {"inputAssessment": {"gr-harbor": {}}, "outputAssessments": {"gr-harbor": [{"contextualGroundingPolicy": {"filters": [{"type": "GROUNDING", "threshold": 0.75, "score": 0.93, "action": "NONE"}, {"type": "RELEVANCE", "threshold": 0.5, "score": 0.97, "action": "NONE"}]}}]}}}
+}

@@ -1,0 +1,43 @@
+[project]
+name = "terraform-aws-bedrock-rag-lab"
+version = "0.1.0"
+description = "Private RAG API over Harbor Goods policy documents on Amazon Bedrock Knowledge Bases, S3 Vectors and Guardrails."
+requires-python = ">=3.13"
+license = "MIT"
+# The Lambda functions use the Python standard library plus boto3 from the Lambda runtime.
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "boto3==1.43.104",
+    "boto3-stubs[bedrock-agent,bedrock-agent-runtime,bedrock-runtime]==1.43.104",
+    "mypy==2.3.1",
+    "pytest==9.1.1",
+    "pyyaml==6.0.3",
+    "ruff==0.16.9",
+    "types-pyyaml==6.0.12.20260906",
+]
+
+[tool.uv]
+exclude-newer = "7 days"
+exclude-newer-package = { boto3 = false, boto3-stubs = false, ruff = false, botocore = false }
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q --strict-markers"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "PT", "RET", "C4", "N", "PTH"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+mypy_path = "src"
+packages = ["harbor_rag", "harbor_eval"]

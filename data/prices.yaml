@@ -1,0 +1,52 @@
+# Pinned unit prices, us-east-1, on-demand, USD. The cost model reads only this file, so a price change is a reviewed
+# diff. Re-check each source before quoting a number to a client.
+region: us-east-1
+currency: USD
+
+models:  # per 1M tokens
+  amazon.nova-micro-v1:0: {input: 0.035, output: 0.14}
+  amazon.nova-lite-v1:0: {input: 0.06, output: 0.24}
+  anthropic.claude-haiku-4-5-20251001-v1:0: {input: 1.00, output: 5.00}
+embedding:  # per 1M input tokens
+  amazon.titan-embed-text-v2:0: 0.02
+guardrails:  # per 1,000 text units; one text unit is up to 1,000 characters
+  content_filters: 0.15
+  denied_topics: 0.15
+  sensitive_information: 0.10
+  contextual_grounding: 0.10
+s3_vectors:
+  storage_gb_month: 0.06
+  put_gb: 0.20
+  queries_per_million: 2.50
+  query_tb_processed: 0.004  # first 100,000 vectors in the index
+opensearch_serverless:
+  ocu_hour: 0.24
+  storage_gb_month: 0.024
+aurora_serverless_v2:
+  acu_hour: 0.12
+  storage_gb_month: 0.10
+lambda:
+  gb_second: 0.0000166667
+  requests_per_million: 0.20
+api_gateway_rest:
+  requests_per_million: 3.50
+vpc_interface_endpoint:
+  hour_per_az: 0.01
+  gb_processed: 0.01
+kms:
+  key_month: 1.00
+cloudwatch:
+  dashboard_month: 3.00
+  alarm_month: 0.10
+  logs_ingest_gb: 0.50
+
+sources:
+  - https://aws.amazon.com/bedrock/pricing/
+  - https://aws.amazon.com/s3/pricing/  # S3 Vectors tab
+  - https://aws.amazon.com/opensearch-service/pricing/
+  - https://aws.amazon.com/rds/aurora/pricing/
+  - https://aws.amazon.com/lambda/pricing/
+  - https://aws.amazon.com/api-gateway/pricing/
+  - https://aws.amazon.com/privatelink/pricing/
+  - https://aws.amazon.com/kms/pricing/
+  - https://aws.amazon.com/cloudwatch/pricing/

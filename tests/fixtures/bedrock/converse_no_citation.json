@@ -1,0 +1,5 @@
+{
+  "output": {"message": {"role": "assistant", "content": [{"text": "Customers usually have a month to return items."}]}},
+  "stopReason": "end_turn",
+  "usage": {"inputTokens": 398, "outputTokens": 11, "totalTokens": 409}
+}

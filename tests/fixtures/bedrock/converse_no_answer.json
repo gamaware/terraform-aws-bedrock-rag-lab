@@ -1,0 +1,5 @@
+{
+  "output": {"message": {"role": "assistant", "content": [{"text": "NO_ANSWER"}]}},
+  "stopReason": "end_turn",
+  "usage": {"inputTokens": 401, "outputTokens": 3, "totalTokens": 404}
+}

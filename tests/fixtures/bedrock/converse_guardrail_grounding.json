@@ -1,0 +1,6 @@
+{
+  "output": {"message": {"role": "assistant", "content": [{"text": "The answer was withheld because it did not meet the assistant's safety or grounding rules. Check with Store Support."}]}},
+  "stopReason": "guardrail_intervened",
+  "usage": {"inputTokens": 405, "outputTokens": 44, "totalTokens": 449},
+  "trace": {"guardrail": {"outputAssessments": {"gr-harbor": [{"contextualGroundingPolicy": {"filters": [{"type": "GROUNDING", "threshold": 0.75, "score": 0.31, "action": "BLOCKED"}, {"type": "RELEVANCE", "threshold": 0.5, "score": 0.88, "action": "NONE"}]}, "sensitiveInformationPolicy": {"piiEntities": [{"type": "EMAIL", "match": "{EMAIL}", "action": "ANONYMIZED"}]}}]}}}
+}

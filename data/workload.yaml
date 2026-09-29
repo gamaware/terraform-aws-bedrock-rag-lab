@@ -1,0 +1,25 @@
+# Workload assumptions for the cost model. Input tokens per question come from the offline evaluation (the real
+# prompt builder over the golden set); the rest are assumptions to replace with CloudWatch numbers after go-live.
+questions_per_month: [5000, 20000, 100000]  # 20,000 is about 60 stores x 11 questions a day
+default_model: amazon.nova-lite-v1:0
+output_tokens_per_answer: 150       # the offline stand-in answers are shorter; 150 is a two-to-three sentence answer
+answer_chars: 600                   # guardrail output assessment
+question_chars: 120
+query_embedding_tokens: 30
+lambda_memory_gb: 0.5
+lambda_seconds_per_question: 2.5    # dominated by the Converse call
+availability_zones: 2
+interface_endpoints: 3              # execute-api, bedrock-runtime, bedrock-agent-runtime
+kms_keys: 3                         # data, knowledge base, api
+alarms: 5
+logs_gb_per_1000_questions: 0.01
+
+corpus:  # sizing for the vector store comparison (production corpus, not the fixture)
+  documents: 200
+  chunks: 6000
+  embedding_dimensions: 1024
+  metadata_bytes_per_vector: 1024
+opensearch_serverless_min_ocu:
+  dev_test: 1        # redundancy off: 0.5 indexing + 0.5 search
+  production: 2      # redundancy on: 1 indexing + 1 search
+aurora_min_acu: 0.5

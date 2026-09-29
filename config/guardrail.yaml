@@ -1,0 +1,85 @@
+# Guardrail policy for the Harbor Goods policy assistant: the single source for
+#   - infra/terraform/knowledge-base (aws_bedrock_guardrail, via yamldecode),
+#   - the local PII pre-filter in the ask function (key `prefilter`, via the PII_PATTERNS variable),
+#   - the offline policy tests (tests/test_guardrail_policy.py) and the live red-team run (make test-live).
+# Bedrock limits checked by the tests: topic names use [0-9a-zA-Z-_ !?.], definitions are at most 200 characters,
+# each topic has at most 5 examples of at most 100 characters.
+
+name: harbor-policy-assistant
+description: Keeps the Harbor Goods policy assistant on policy questions, grounded in the sources, and free of PII.
+blocked_input_message: >-
+  This assistant answers questions about Harbor Goods store and supplier policies. It can't help with that request.
+blocked_output_message: >-
+  The answer was withheld because it did not meet the assistant's safety or grounding rules. Check with Store Support.
+
+content_filters:
+  - {type: HATE, input: HIGH, output: HIGH}
+  - {type: INSULTS, input: HIGH, output: HIGH}
+  - {type: SEXUAL, input: HIGH, output: HIGH}
+  - {type: VIOLENCE, input: HIGH, output: HIGH}
+  - {type: MISCONDUCT, input: HIGH, output: HIGH}
+  # Prompt attacks are only assessed on input; the output strength must be NONE.
+  - {type: PROMPT_ATTACK, input: HIGH, output: NONE}
+
+denied_topics:
+  - name: legal-advice
+    definition: >-
+      Requests for legal opinions or advice on liability, lawsuits, contracts or how the law applies to a
+      situation.
+    examples:
+      - Can the customer sue us if the sofa collapsed?
+      - Are we legally liable for a package stolen from a porch?
+      - Is our return policy enforceable under state law?
+      - How should I answer the customer's lawyer?
+  - name: competitor-pricing
+    definition: >-
+      Questions about competitors' prices, margins, promotions or strategy, or comparisons of Harbor Goods prices
+      with named competitors.
+    examples:
+      - What does the store across the street charge for this blender?
+      - Which competitor has the lowest price on this TV right now?
+      - What margin do other retailers make on mattresses?
+  - name: employee-records
+    definition: >-
+      Requests for information about individual employees, their pay, performance, schedules or disciplinary
+      history.
+    examples:
+      - How much does the night shift lead earn?
+      - Has my coworker been written up before?
+      - What is the store manager's home address?
+
+# Managed PII entity types. ANONYMIZE replaces the value with {TYPE}; BLOCK withholds the whole message.
+pii_entities:
+  - {type: EMAIL, action: ANONYMIZE}
+  - {type: PHONE, action: ANONYMIZE}
+  - {type: NAME, action: ANONYMIZE}
+  - {type: ADDRESS, action: ANONYMIZE}
+  - {type: CREDIT_DEBIT_CARD_NUMBER, action: BLOCK}
+  - {type: US_SOCIAL_SECURITY_NUMBER, action: BLOCK}
+  - {type: US_BANK_ACCOUNT_NUMBER, action: BLOCK}
+
+# Harbor Goods identifiers the managed types do not know.
+pii_regexes:
+  - name: LOYALTY_NUMBER
+    description: Harbor Rewards loyalty number
+    pattern: '\bHR-\d{4}-\d{4}-\d{4}\b'
+    action: ANONYMIZE
+
+# Local pre-filter (ask function): applied to the question before Retrieve and before logging. Every managed entity
+# above needs a pattern here or an entry in prefilter_exempt with the reason.
+prefilter:
+  - {name: EMAIL, pattern: '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'}
+  - {name: CREDIT_DEBIT_CARD_NUMBER, pattern: '\b(?:\d[ -]?){12,18}\d\b'}
+  - {name: US_SOCIAL_SECURITY_NUMBER, pattern: '\b\d{3}-\d{2}-\d{4}\b'}
+  - {name: PHONE, pattern: '(?:\+1[ .-]?)?\(?\b\d{3}\)?[ .-]\d{3}[ .-]\d{4}\b'}
+  - {name: US_BANK_ACCOUNT_NUMBER, pattern: '(?i)\b(?:account|acct)\s*(?:number|no\.?|#)?\s*:?\s*\d{8,17}\b'}
+  - {name: LOYALTY_NUMBER, pattern: '\bHR-\d{4}-\d{4}-\d{4}\b'}
+
+prefilter_exempt:
+  NAME: A name cannot be told apart from a product or brand name with a pattern; the guardrail anonymizes names.
+  ADDRESS: Street addresses vary too much for a pattern; the guardrail anonymizes addresses.
+
+contextual_grounding:
+  # Answers scoring below the threshold are blocked. 0.75 grounding follows the ADR 0005 trade-off.
+  - {type: GROUNDING, threshold: 0.75}
+  - {type: RELEVANCE, threshold: 0.5}

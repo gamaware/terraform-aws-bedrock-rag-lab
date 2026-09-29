@@ -1,0 +1,3132 @@
+{
+ "configuration": {
+  "root_module": {
+   "outputs": {
+    "alerts_topic_arn": {
+     "description": "SNS topic for alarms and the budget.",
+     "expression": {
+      "references": [
+       "aws_sns_topic.alerts.arn",
+       "aws_sns_topic.alerts"
+      ]
+     }
+    },
+    "invocation_logs_bucket_name": {
+     "description": "Bucket that receives Bedrock model invocation logs.",
+     "expression": {
+      "references": [
+       "aws_s3_bucket.invocation_logs.id",
+       "aws_s3_bucket.invocation_logs"
+      ]
+     }
+    },
+    "kms_key_arn": {
+     "description": "KMS key for the policy documents, invocation logs and alerts topic.",
+     "expression": {
+      "references": [
+       "aws_kms_key.data.arn",
+       "aws_kms_key.data"
+      ]
+     }
+    },
+    "policies_bucket_arn": {
+     "description": "ARN of the policy document bucket.",
+     "expression": {
+      "references": [
+       "aws_s3_bucket.policies.arn",
+       "aws_s3_bucket.policies"
+      ]
+     }
+    },
+    "policies_bucket_name": {
+     "description": "Bucket the knowledge base ingests. Upload policy documents and their .metadata.json files here.",
+     "expression": {
+      "references": [
+       "aws_s3_bucket.policies.id",
+       "aws_s3_bucket.policies"
+      ]
+     }
+    }
+   },
+   "resources": [
+    {
+     "address": "aws_bedrock_model_invocation_logging_configuration.this",
+     "count_expression": {
+      "references": [
+       "var.enable_invocation_logging"
+      ]
+     },
+     "depends_on": [
+      "aws_s3_bucket_policy.invocation_logs"
+     ],
+     "expressions": {
+      "logging_config": [
+       {
+        "embedding_data_delivery_enabled": {
+         "constant_value": false
+        },
+        "image_data_delivery_enabled": {
+         "constant_value": false
+        },
+        "s3_config": [
+         {
+          "bucket_name": {
+           "references": [
+            "aws_s3_bucket.invocation_logs.id",
+            "aws_s3_bucket.invocation_logs"
+           ]
+          },
+          "key_prefix": {
+           "references": [
+            "local.invocation_log_prefix"
+           ]
+          }
+         }
+        ],
+        "text_data_delivery_enabled": {
+         "constant_value": true
+        },
+        "video_data_delivery_enabled": {
+         "constant_value": false
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "this",
+     "provider_config_key": "aws",
+     "type": "aws_bedrock_model_invocation_logging_configuration"
+    },
+    {
+     "address": "aws_kms_alias.data",
+     "expressions": {
+      "name": {
+       "references": [
+        "var.name"
+       ]
+      },
+      "target_key_id": {
+       "references": [
+        "aws_kms_key.data.key_id",
+        "aws_kms_key.data"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "data",
+     "provider_config_key": "aws",
+     "type": "aws_kms_alias"
+    },
+    {
+     "address": "aws_kms_key.data",
+     "expressions": {
+      "deletion_window_in_days": {
+       "constant_value": 30
+      },
+      "description": {
+       "references": [
+        "var.name"
+       ]
+      },
+      "enable_key_rotation": {
+       "constant_value": true
+      },
+      "policy": {
+       "references": [
+        "local.partition",
+        "local.account_id",
+        "local.account_id",
+        "local.partition",
+        "local.region",
+        "local.account_id",
+        "local.account_id"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "data",
+     "provider_config_key": "aws",
+     "type": "aws_kms_key"
+    },
+    {
+     "address": "aws_s3_bucket.access_logs",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "var.name",
+        "local.bucket_suffix"
+       ]
+      },
+      "force_destroy": {
+       "references": [
+        "var.force_destroy"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "access_logs",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket"
+    },
+    {
+     "address": "aws_s3_bucket.invocation_logs",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "var.name",
+        "local.bucket_suffix"
+       ]
+      },
+      "force_destroy": {
+       "references": [
+        "var.force_destroy"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "invocation_logs",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket"
+    },
+    {
+     "address": "aws_s3_bucket.policies",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "var.name",
+        "local.bucket_suffix"
+       ]
+      },
+      "force_destroy": {
+       "references": [
+        "var.force_destroy"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "policies",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket"
+    },
+    {
+     "address": "aws_s3_bucket_lifecycle_configuration.access_logs",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.access_logs.id",
+        "aws_s3_bucket.access_logs"
+       ]
+      },
+      "rule": [
+       {
+        "abort_incomplete_multipart_upload": [
+         {
+          "days_after_initiation": {
+           "constant_value": 7
+          }
+         }
+        ],
+        "filter": [
+         {}
+        ],
+        "id": {
+         "constant_value": "expire-old-versions"
+        },
+        "noncurrent_version_expiration": [
+         {
+          "noncurrent_days": {
+           "references": [
+            "var.noncurrent_version_days"
+           ]
+          }
+         }
+        ],
+        "status": {
+         "constant_value": "Enabled"
+        }
+       },
+       {
+        "abort_incomplete_multipart_upload": [
+         {
+          "days_after_initiation": {
+           "constant_value": 7
+          }
+         }
+        ],
+        "expiration": [
+         {
+          "days": {
+           "references": [
+            "var.log_retention_days"
+           ]
+          }
+         }
+        ],
+        "filter": [
+         {}
+        ],
+        "id": {
+         "constant_value": "expire-logs"
+        },
+        "status": {
+         "constant_value": "Enabled"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "access_logs",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_lifecycle_configuration"
+    },
+    {
+     "address": "aws_s3_bucket_lifecycle_configuration.invocation_logs",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.invocation_logs.id",
+        "aws_s3_bucket.invocation_logs"
+       ]
+      },
+      "rule": [
+       {
+        "abort_incomplete_multipart_upload": [
+         {
+          "days_after_initiation": {
+           "constant_value": 7
+          }
+         }
+        ],
+        "filter": [
+         {}
+        ],
+        "id": {
+         "constant_value": "expire-old-versions"
+        },
+        "noncurrent_version_expiration": [
+         {
+          "noncurrent_days": {
+           "references": [
+            "var.noncurrent_version_days"
+           ]
+          }
+         }
+        ],
+        "status": {
+         "constant_value": "Enabled"
+        }
+       },
+       {
+        "abort_incomplete_multipart_upload": [
+         {
+          "days_after_initiation": {
+           "constant_value": 7
+          }
+         }
+        ],
+        "expiration": [
+         {
+          "days": {
+           "references": [
+            "var.log_retention_days"
+           ]
+          }
+         }
+        ],
+        "filter": [
+         {}
+        ],
+        "id": {
+         "constant_value": "expire-logs"
+        },
+        "status": {
+         "constant_value": "Enabled"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "invocation_logs",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_lifecycle_configuration"
+    },
+    {
+     "address": "aws_s3_bucket_lifecycle_configuration.policies",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.policies.id",
+        "aws_s3_bucket.policies"
+       ]
+      },
+      "rule": [
+       {
+        "abort_incomplete_multipart_upload": [
+         {
+          "days_after_initiation": {
+           "constant_value": 7
+          }
+         }
+        ],
+        "filter": [
+         {}
+        ],
+        "id": {
+         "constant_value": "expire-old-versions"
+        },
+        "noncurrent_version_expiration": [
+         {
+          "noncurrent_days": {
+           "references": [
+            "var.noncurrent_version_days"
+           ]
+          }
+         }
+        ],
+        "status": {
+         "constant_value": "Enabled"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "policies",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_lifecycle_configuration"
+    },
+    {
+     "address": "aws_s3_bucket_logging.this",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "each.value.id",
+        "each.value"
+       ]
+      },
+      "target_bucket": {
+       "references": [
+        "aws_s3_bucket.access_logs.id",
+        "aws_s3_bucket.access_logs"
+       ]
+      },
+      "target_prefix": {
+       "references": [
+        "each.key"
+       ]
+      }
+     },
+     "for_each_expression": {
+      "references": [
+       "local.logged_buckets"
+      ]
+     },
+     "mode": "managed",
+     "name": "this",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_logging"
+    },
+    {
+     "address": "aws_s3_bucket_notification.policies",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.policies.id",
+        "aws_s3_bucket.policies"
+       ]
+      },
+      "eventbridge": {
+       "constant_value": true
+      }
+     },
+     "mode": "managed",
+     "name": "policies",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_notification"
+    },
+    {
+     "address": "aws_s3_bucket_ownership_controls.access_logs",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.access_logs.id",
+        "aws_s3_bucket.access_logs"
+       ]
+      },
+      "rule": [
+       {
+        "object_ownership": {
+         "constant_value": "BucketOwnerEnforced"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "access_logs",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_ownership_controls"
+    },
+    {
+     "address": "aws_s3_bucket_ownership_controls.invocation_logs",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.invocation_logs.id",
+        "aws_s3_bucket.invocation_logs"
+       ]
+      },
+      "rule": [
+       {
+        "object_ownership": {
+         "constant_value": "BucketOwnerEnforced"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "invocation_logs",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_ownership_controls"
+    },
+    {
+     "address": "aws_s3_bucket_ownership_controls.policies",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.policies.id",
+        "aws_s3_bucket.policies"
+       ]
+      },
+      "rule": [
+       {
+        "object_ownership": {
+         "constant_value": "BucketOwnerEnforced"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "policies",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_ownership_controls"
+    },
+    {
+     "address": "aws_s3_bucket_policy.access_logs",
+     "depends_on": [
+      "aws_s3_bucket_public_access_block.policies",
+      "aws_s3_bucket_public_access_block.invocation_logs",
+      "aws_s3_bucket_public_access_block.access_logs"
+     ],
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.access_logs.id",
+        "aws_s3_bucket.access_logs"
+       ]
+      },
+      "policy": {
+       "references": [
+        "data.aws_iam_policy_document.access_logs.json",
+        "data.aws_iam_policy_document.access_logs"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "access_logs",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_policy"
+    },
+    {
+     "address": "aws_s3_bucket_policy.invocation_logs",
+     "depends_on": [
+      "aws_s3_bucket_public_access_block.policies",
+      "aws_s3_bucket_public_access_block.invocation_logs",
+      "aws_s3_bucket_public_access_block.access_logs"
+     ],
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.invocation_logs.id",
+        "aws_s3_bucket.invocation_logs"
+       ]
+      },
+      "policy": {
+       "references": [
+        "data.aws_iam_policy_document.invocation_logs.json",
+        "data.aws_iam_policy_document.invocation_logs"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "invocation_logs",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_policy"
+    },
+    {
+     "address": "aws_s3_bucket_policy.policies",
+     "depends_on": [
+      "aws_s3_bucket_public_access_block.policies",
+      "aws_s3_bucket_public_access_block.invocation_logs",
+      "aws_s3_bucket_public_access_block.access_logs"
+     ],
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.policies.id",
+        "aws_s3_bucket.policies"
+       ]
+      },
+      "policy": {
+       "references": [
+        "data.aws_iam_policy_document.policies.json",
+        "data.aws_iam_policy_document.policies"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "policies",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_policy"
+    },
+    {
+     "address": "aws_s3_bucket_public_access_block.access_logs",
+     "expressions": {
+      "block_public_acls": {
+       "constant_value": true
+      },
+      "block_public_policy": {
+       "constant_value": true
+      },
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.access_logs.id",
+        "aws_s3_bucket.access_logs"
+       ]
+      },
+      "ignore_public_acls": {
+       "constant_value": true
+      },
+      "restrict_public_buckets": {
+       "constant_value": true
+      }
+     },
+     "mode": "managed",
+     "name": "access_logs",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_public_access_block"
+    },
+    {
+     "address": "aws_s3_bucket_public_access_block.invocation_logs",
+     "expressions": {
+      "block_public_acls": {
+       "constant_value": true
+      },
+      "block_public_policy": {
+       "constant_value": true
+      },
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.invocation_logs.id",
+        "aws_s3_bucket.invocation_logs"
+       ]
+      },
+      "ignore_public_acls": {
+       "constant_value": true
+      },
+      "restrict_public_buckets": {
+       "constant_value": true
+      }
+     },
+     "mode": "managed",
+     "name": "invocation_logs",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_public_access_block"
+    },
+    {
+     "address": "aws_s3_bucket_public_access_block.policies",
+     "expressions": {
+      "block_public_acls": {
+       "constant_value": true
+      },
+      "block_public_policy": {
+       "constant_value": true
+      },
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.policies.id",
+        "aws_s3_bucket.policies"
+       ]
+      },
+      "ignore_public_acls": {
+       "constant_value": true
+      },
+      "restrict_public_buckets": {
+       "constant_value": true
+      }
+     },
+     "mode": "managed",
+     "name": "policies",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_public_access_block"
+    },
+    {
+     "address": "aws_s3_bucket_server_side_encryption_configuration.access_logs",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.access_logs.id",
+        "aws_s3_bucket.access_logs"
+       ]
+      },
+      "rule": [
+       {
+        "apply_server_side_encryption_by_default": [
+         {
+          "sse_algorithm": {
+           "constant_value": "AES256"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "access_logs",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_server_side_encryption_configuration"
+    },
+    {
+     "address": "aws_s3_bucket_server_side_encryption_configuration.invocation_logs",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.invocation_logs.id",
+        "aws_s3_bucket.invocation_logs"
+       ]
+      },
+      "rule": [
+       {
+        "apply_server_side_encryption_by_default": [
+         {
+          "kms_master_key_id": {
+           "references": [
+            "aws_kms_key.data.arn",
+            "aws_kms_key.data"
+           ]
+          },
+          "sse_algorithm": {
+           "constant_value": "aws:kms"
+          }
+         }
+        ],
+        "bucket_key_enabled": {
+         "constant_value": true
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "invocation_logs",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_server_side_encryption_configuration"
+    },
+    {
+     "address": "aws_s3_bucket_server_side_encryption_configuration.policies",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.policies.id",
+        "aws_s3_bucket.policies"
+       ]
+      },
+      "rule": [
+       {
+        "apply_server_side_encryption_by_default": [
+         {
+          "kms_master_key_id": {
+           "references": [
+            "aws_kms_key.data.arn",
+            "aws_kms_key.data"
+           ]
+          },
+          "sse_algorithm": {
+           "constant_value": "aws:kms"
+          }
+         }
+        ],
+        "bucket_key_enabled": {
+         "constant_value": true
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "policies",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_server_side_encryption_configuration"
+    },
+    {
+     "address": "aws_s3_bucket_versioning.access_logs",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.access_logs.id",
+        "aws_s3_bucket.access_logs"
+       ]
+      },
+      "versioning_configuration": [
+       {
+        "status": {
+         "constant_value": "Enabled"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "access_logs",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_versioning"
+    },
+    {
+     "address": "aws_s3_bucket_versioning.invocation_logs",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.invocation_logs.id",
+        "aws_s3_bucket.invocation_logs"
+       ]
+      },
+      "versioning_configuration": [
+       {
+        "status": {
+         "constant_value": "Enabled"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "invocation_logs",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_versioning"
+    },
+    {
+     "address": "aws_s3_bucket_versioning.policies",
+     "expressions": {
+      "bucket": {
+       "references": [
+        "aws_s3_bucket.policies.id",
+        "aws_s3_bucket.policies"
+       ]
+      },
+      "versioning_configuration": [
+       {
+        "status": {
+         "constant_value": "Enabled"
+        }
+       }
+      ]
+     },
+     "mode": "managed",
+     "name": "policies",
+     "provider_config_key": "aws",
+     "type": "aws_s3_bucket_versioning"
+    },
+    {
+     "address": "aws_sns_topic.alerts",
+     "expressions": {
+      "kms_master_key_id": {
+       "references": [
+        "aws_kms_key.data.arn",
+        "aws_kms_key.data"
+       ]
+      },
+      "name": {
+       "references": [
+        "var.name"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "alerts",
+     "provider_config_key": "aws",
+     "type": "aws_sns_topic"
+    },
+    {
+     "address": "aws_sns_topic_policy.alerts",
+     "expressions": {
+      "arn": {
+       "references": [
+        "aws_sns_topic.alerts.arn",
+        "aws_sns_topic.alerts"
+       ]
+      },
+      "policy": {
+       "references": [
+        "data.aws_iam_policy_document.alerts.json",
+        "data.aws_iam_policy_document.alerts"
+       ]
+      }
+     },
+     "mode": "managed",
+     "name": "alerts",
+     "provider_config_key": "aws",
+     "type": "aws_sns_topic_policy"
+    },
+    {
+     "address": "data.aws_iam_policy_document.access_logs",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "s3:*"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "Bool"
+          },
+          "values": {
+           "constant_value": [
+            "false"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SecureTransport"
+          }
+         }
+        ],
+        "effect": {
+         "constant_value": "Deny"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "*"
+           ]
+          },
+          "type": {
+           "constant_value": "*"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_s3_bucket.access_logs.arn",
+          "aws_s3_bucket.access_logs",
+          "aws_s3_bucket.access_logs.arn",
+          "aws_s3_bucket.access_logs"
+         ]
+        },
+        "sid": {
+         "constant_value": "TlsOnly"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
+          "s3:PutObject"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "StringEquals"
+          },
+          "values": {
+           "references": [
+            "local.account_id"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SourceAccount"
+          }
+         },
+         {
+          "test": {
+           "constant_value": "ArnLike"
+          },
+          "values": {
+           "references": [
+            "aws_s3_bucket.policies.arn",
+            "aws_s3_bucket.policies",
+            "aws_s3_bucket.invocation_logs.arn",
+            "aws_s3_bucket.invocation_logs"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SourceArn"
+          }
+         }
+        ],
+        "effect": {
+         "constant_value": "Allow"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "logging.s3.amazonaws.com"
+           ]
+          },
+          "type": {
+           "constant_value": "Service"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_s3_bucket.access_logs.arn",
+          "aws_s3_bucket.access_logs"
+         ]
+        },
+        "sid": {
+         "constant_value": "S3ServerAccessLogs"
+        }
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "access_logs",
+     "provider_config_key": "aws",
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_iam_policy_document.alerts",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "sns:Publish"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "StringEquals"
+          },
+          "values": {
+           "references": [
+            "local.account_id"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SourceAccount"
+          }
+         }
+        ],
+        "effect": {
+         "constant_value": "Allow"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "cloudwatch.amazonaws.com",
+            "budgets.amazonaws.com"
+           ]
+          },
+          "type": {
+           "constant_value": "Service"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_sns_topic.alerts.arn",
+          "aws_sns_topic.alerts"
+         ]
+        },
+        "sid": {
+         "constant_value": "AlarmsAndBudgetsInThisAccount"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
+          "sns:Publish"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "Bool"
+          },
+          "values": {
+           "constant_value": [
+            "false"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SecureTransport"
+          }
+         }
+        ],
+        "effect": {
+         "constant_value": "Deny"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "*"
+           ]
+          },
+          "type": {
+           "constant_value": "*"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_sns_topic.alerts.arn",
+          "aws_sns_topic.alerts"
+         ]
+        },
+        "sid": {
+         "constant_value": "TlsOnly"
+        }
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "alerts",
+     "provider_config_key": "aws",
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_iam_policy_document.invocation_logs",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "s3:*"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "Bool"
+          },
+          "values": {
+           "constant_value": [
+            "false"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SecureTransport"
+          }
+         }
+        ],
+        "effect": {
+         "constant_value": "Deny"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "*"
+           ]
+          },
+          "type": {
+           "constant_value": "*"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_s3_bucket.invocation_logs.arn",
+          "aws_s3_bucket.invocation_logs",
+          "aws_s3_bucket.invocation_logs.arn",
+          "aws_s3_bucket.invocation_logs"
+         ]
+        },
+        "sid": {
+         "constant_value": "TlsOnly"
+        }
+       },
+       {
+        "actions": {
+         "constant_value": [
+          "s3:PutObject"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "StringEquals"
+          },
+          "values": {
+           "references": [
+            "local.account_id"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SourceAccount"
+          }
+         },
+         {
+          "test": {
+           "constant_value": "ArnLike"
+          },
+          "values": {
+           "references": [
+            "local.partition",
+            "local.region",
+            "local.account_id"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SourceArn"
+          }
+         }
+        ],
+        "effect": {
+         "constant_value": "Allow"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "bedrock.amazonaws.com"
+           ]
+          },
+          "type": {
+           "constant_value": "Service"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_s3_bucket.invocation_logs.arn",
+          "aws_s3_bucket.invocation_logs",
+          "local.invocation_log_prefix",
+          "local.account_id"
+         ]
+        },
+        "sid": {
+         "constant_value": "BedrockInvocationLogDelivery"
+        }
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "invocation_logs",
+     "provider_config_key": "aws",
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_iam_policy_document.policies",
+     "expressions": {
+      "statement": [
+       {
+        "actions": {
+         "constant_value": [
+          "s3:*"
+         ]
+        },
+        "condition": [
+         {
+          "test": {
+           "constant_value": "Bool"
+          },
+          "values": {
+           "constant_value": [
+            "false"
+           ]
+          },
+          "variable": {
+           "constant_value": "aws:SecureTransport"
+          }
+         }
+        ],
+        "effect": {
+         "constant_value": "Deny"
+        },
+        "principals": [
+         {
+          "identifiers": {
+           "constant_value": [
+            "*"
+           ]
+          },
+          "type": {
+           "constant_value": "*"
+          }
+         }
+        ],
+        "resources": {
+         "references": [
+          "aws_s3_bucket.policies.arn",
+          "aws_s3_bucket.policies",
+          "aws_s3_bucket.policies.arn",
+          "aws_s3_bucket.policies"
+         ]
+        },
+        "sid": {
+         "constant_value": "TlsOnly"
+        }
+       }
+      ]
+     },
+     "mode": "data",
+     "name": "policies",
+     "provider_config_key": "aws",
+     "type": "aws_iam_policy_document"
+    },
+    {
+     "address": "data.aws_partition.current",
+     "mode": "data",
+     "name": "current",
+     "provider_config_key": "aws",
+     "type": "aws_partition"
+    },
+    {
+     "address": "data.aws_region.current",
+     "mode": "data",
+     "name": "current",
+     "provider_config_key": "aws",
+     "type": "aws_region"
+    }
+   ],
+   "variables": {
+    "enable_invocation_logging": {
+     "default": true,
+     "description": "Turn on Bedrock model invocation logging for the account and Region (an account-level setting)."
+    },
+    "force_destroy": {
+     "default": false,
+     "description": "Allow destroying buckets that still hold objects. Only the live test sets this."
+    },
+    "log_retention_days": {
+     "default": 365,
+     "description": "Days to keep invocation logs and S3 access logs."
+    },
+    "name": {
+     "default": "harbor-policy-assistant",
+     "description": "Name prefix for every resource (lower case, digits and hyphens)."
+    },
+    "noncurrent_version_days": {
+     "default": 90,
+     "description": "Days to keep previous versions of policy documents and log objects."
+    },
+    "region": {
+     "default": "us-east-1",
+     "description": "AWS Region for every stack in this repository."
+    },
+    "tags": {
+     "default": {},
+     "description": "Extra tags for every resource."
+    }
+   }
+  }
+ },
+ "format_version": "1.2",
+ "resource_changes": [
+  {
+   "action_reason": "read_because_config_unknown",
+   "address": "data.aws_iam_policy_document.access_logs",
+   "change": {
+    "actions": [
+     "read"
+    ],
+    "after": {
+     "override_json": null,
+     "override_policy_documents": null,
+     "policy_id": null,
+     "source_json": null,
+     "source_policy_documents": null,
+     "statement": [
+      {
+       "actions": [
+        "s3:*"
+       ],
+       "condition": [
+        {
+         "test": "Bool",
+         "values": [
+          "false"
+         ],
+         "variable": "aws:SecureTransport"
+        }
+       ],
+       "effect": "Deny",
+       "not_actions": null,
+       "not_principals": [],
+       "not_resources": null,
+       "principals": [
+        {
+         "identifiers": [
+          "*"
+         ],
+         "type": "*"
+        }
+       ],
+       "resources": [
+        null,
+        null
+       ],
+       "sid": "TlsOnly"
+      },
+      {
+       "actions": [
+        "s3:PutObject"
+       ],
+       "condition": [
+        {
+         "test": "ArnLike",
+         "values": [
+          null,
+          null
+         ],
+         "variable": "aws:SourceArn"
+        },
+        {
+         "test": "StringEquals",
+         "values": [
+          "111122223333"
+         ],
+         "variable": "aws:SourceAccount"
+        }
+       ],
+       "effect": "Allow",
+       "not_actions": null,
+       "not_principals": [],
+       "not_resources": null,
+       "principals": [
+        {
+         "identifiers": [
+          "logging.s3.amazonaws.com"
+         ],
+         "type": "Service"
+        }
+       ],
+       "resources": [
+        null
+       ],
+       "sid": "S3ServerAccessLogs"
+      }
+     ],
+     "version": null
+    },
+    "after_unknown": {
+     "id": true,
+     "json": true,
+     "minified_json": true,
+     "statement": [
+      {
+       "actions": [
+        false
+       ],
+       "condition": [
+        {
+         "values": [
+          false
+         ]
+        }
+       ],
+       "not_principals": [],
+       "principals": [
+        {
+         "identifiers": [
+          false
+         ]
+        }
+       ],
+       "resources": [
+        true,
+        true
+       ]
+      },
+      {
+       "actions": [
+        false
+       ],
+       "condition": [
+        {
+         "values": [
+          true,
+          true
+         ]
+        },
+        {
+         "values": [
+          false
+         ]
+        }
+       ],
+       "not_principals": [],
+       "principals": [
+        {
+         "identifiers": [
+          false
+         ]
+        }
+       ],
+       "resources": [
+        true
+       ]
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "data",
+   "name": "access_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_iam_policy_document"
+  },
+  {
+   "action_reason": "read_because_config_unknown",
+   "address": "data.aws_iam_policy_document.alerts",
+   "change": {
+    "actions": [
+     "read"
+    ],
+    "after": {
+     "override_json": null,
+     "override_policy_documents": null,
+     "policy_id": null,
+     "source_json": null,
+     "source_policy_documents": null,
+     "statement": [
+      {
+       "actions": [
+        "sns:Publish"
+       ],
+       "condition": [
+        {
+         "test": "StringEquals",
+         "values": [
+          "111122223333"
+         ],
+         "variable": "aws:SourceAccount"
+        }
+       ],
+       "effect": "Allow",
+       "not_actions": null,
+       "not_principals": [],
+       "not_resources": null,
+       "principals": [
+        {
+         "identifiers": [
+          "budgets.amazonaws.com",
+          "cloudwatch.amazonaws.com"
+         ],
+         "type": "Service"
+        }
+       ],
+       "resources": [
+        null
+       ],
+       "sid": "AlarmsAndBudgetsInThisAccount"
+      },
+      {
+       "actions": [
+        "sns:Publish"
+       ],
+       "condition": [
+        {
+         "test": "Bool",
+         "values": [
+          "false"
+         ],
+         "variable": "aws:SecureTransport"
+        }
+       ],
+       "effect": "Deny",
+       "not_actions": null,
+       "not_principals": [],
+       "not_resources": null,
+       "principals": [
+        {
+         "identifiers": [
+          "*"
+         ],
+         "type": "*"
+        }
+       ],
+       "resources": [
+        null
+       ],
+       "sid": "TlsOnly"
+      }
+     ],
+     "version": null
+    },
+    "after_unknown": {
+     "id": true,
+     "json": true,
+     "minified_json": true,
+     "statement": [
+      {
+       "actions": [
+        false
+       ],
+       "condition": [
+        {
+         "values": [
+          false
+         ]
+        }
+       ],
+       "not_principals": [],
+       "principals": [
+        {
+         "identifiers": [
+          false,
+          false
+         ]
+        }
+       ],
+       "resources": [
+        true
+       ]
+      },
+      {
+       "actions": [
+        false
+       ],
+       "condition": [
+        {
+         "values": [
+          false
+         ]
+        }
+       ],
+       "not_principals": [],
+       "principals": [
+        {
+         "identifiers": [
+          false
+         ]
+        }
+       ],
+       "resources": [
+        true
+       ]
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "data",
+   "name": "alerts",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_iam_policy_document"
+  },
+  {
+   "action_reason": "read_because_config_unknown",
+   "address": "data.aws_iam_policy_document.invocation_logs",
+   "change": {
+    "actions": [
+     "read"
+    ],
+    "after": {
+     "override_json": null,
+     "override_policy_documents": null,
+     "policy_id": null,
+     "source_json": null,
+     "source_policy_documents": null,
+     "statement": [
+      {
+       "actions": [
+        "s3:*"
+       ],
+       "condition": [
+        {
+         "test": "Bool",
+         "values": [
+          "false"
+         ],
+         "variable": "aws:SecureTransport"
+        }
+       ],
+       "effect": "Deny",
+       "not_actions": null,
+       "not_principals": [],
+       "not_resources": null,
+       "principals": [
+        {
+         "identifiers": [
+          "*"
+         ],
+         "type": "*"
+        }
+       ],
+       "resources": [
+        null,
+        null
+       ],
+       "sid": "TlsOnly"
+      },
+      {
+       "actions": [
+        "s3:PutObject"
+       ],
+       "condition": [
+        {
+         "test": "ArnLike",
+         "values": [
+          "arn:aws:bedrock:us-east-1:111122223333:*"
+         ],
+         "variable": "aws:SourceArn"
+        },
+        {
+         "test": "StringEquals",
+         "values": [
+          "111122223333"
+         ],
+         "variable": "aws:SourceAccount"
+        }
+       ],
+       "effect": "Allow",
+       "not_actions": null,
+       "not_principals": [],
+       "not_resources": null,
+       "principals": [
+        {
+         "identifiers": [
+          "bedrock.amazonaws.com"
+         ],
+         "type": "Service"
+        }
+       ],
+       "resources": [
+        null
+       ],
+       "sid": "BedrockInvocationLogDelivery"
+      }
+     ],
+     "version": null
+    },
+    "after_unknown": {
+     "id": true,
+     "json": true,
+     "minified_json": true,
+     "statement": [
+      {
+       "actions": [
+        false
+       ],
+       "condition": [
+        {
+         "values": [
+          false
+         ]
+        }
+       ],
+       "not_principals": [],
+       "principals": [
+        {
+         "identifiers": [
+          false
+         ]
+        }
+       ],
+       "resources": [
+        true,
+        true
+       ]
+      },
+      {
+       "actions": [
+        false
+       ],
+       "condition": [
+        {
+         "values": [
+          false
+         ]
+        },
+        {
+         "values": [
+          false
+         ]
+        }
+       ],
+       "not_principals": [],
+       "principals": [
+        {
+         "identifiers": [
+          false
+         ]
+        }
+       ],
+       "resources": [
+        true
+       ]
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "data",
+   "name": "invocation_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_iam_policy_document"
+  },
+  {
+   "action_reason": "read_because_config_unknown",
+   "address": "data.aws_iam_policy_document.policies",
+   "change": {
+    "actions": [
+     "read"
+    ],
+    "after": {
+     "override_json": null,
+     "override_policy_documents": null,
+     "policy_id": null,
+     "source_json": null,
+     "source_policy_documents": null,
+     "statement": [
+      {
+       "actions": [
+        "s3:*"
+       ],
+       "condition": [
+        {
+         "test": "Bool",
+         "values": [
+          "false"
+         ],
+         "variable": "aws:SecureTransport"
+        }
+       ],
+       "effect": "Deny",
+       "not_actions": null,
+       "not_principals": [],
+       "not_resources": null,
+       "principals": [
+        {
+         "identifiers": [
+          "*"
+         ],
+         "type": "*"
+        }
+       ],
+       "resources": [
+        null,
+        null
+       ],
+       "sid": "TlsOnly"
+      }
+     ],
+     "version": null
+    },
+    "after_unknown": {
+     "id": true,
+     "json": true,
+     "minified_json": true,
+     "statement": [
+      {
+       "actions": [
+        false
+       ],
+       "condition": [
+        {
+         "values": [
+          false
+         ]
+        }
+       ],
+       "not_principals": [],
+       "principals": [
+        {
+         "identifiers": [
+          false
+         ]
+        }
+       ],
+       "resources": [
+        true,
+        true
+       ]
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "data",
+   "name": "policies",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_iam_policy_document"
+  },
+  {
+   "address": "aws_kms_alias.data",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "name": "alias/harbor-policy-assistant-data",
+     "region": "us-east-1"
+    },
+    "after_identity": {
+     "account_id": null,
+     "name": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "id": true,
+     "name_prefix": true,
+     "target_key_arn": true,
+     "target_key_id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "data",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_kms_alias"
+  },
+  {
+   "address": "aws_kms_key.data",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "bypass_policy_lockout_safety_check": false,
+     "custom_key_store_id": null,
+     "customer_master_key_spec": "SYMMETRIC_DEFAULT",
+     "deletion_window_in_days": 30,
+     "description": "harbor-policy-assistant: policy documents, invocation logs, alerts",
+     "enable_key_rotation": true,
+     "is_enabled": true,
+     "key_usage": "ENCRYPT_DECRYPT",
+     "policy": "{\"Statement\":[{\"Action\":\"kms:*\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Resource\":\"*\",\"Sid\":\"AccountAdministration\"},{\"Action\":[\"kms:GenerateDataKey\",\"kms:Decrypt\"],\"Condition\":{\"ArnLike\":{\"aws:SourceArn\":\"arn:aws:bedrock:us-east-1:111122223333:*\"},\"StringEquals\":{\"aws:SourceAccount\":\"111122223333\"}},\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"bedrock.amazonaws.com\"},\"Resource\":\"*\",\"Sid\":\"BedrockInvocationLogs\"},{\"Action\":[\"kms:GenerateDataKey\",\"kms:Decrypt\"],\"Condition\":{\"StringEquals\":{\"aws:SourceAccount\":\"111122223333\"}},\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"cloudwatch.amazonaws.com\",\"budgets.amazonaws.com\"]},\"Resource\":\"*\",\"Sid\":\"AlarmsAndBudgetsPublishToEncryptedTopic\"}],\"Version\":\"2012-10-17\"}",
+     "region": "us-east-1",
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "data"
+     },
+     "timeouts": null,
+     "xks_key_id": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "id": null,
+     "region": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "id": true,
+     "key_id": true,
+     "multi_region": true,
+     "rotation_period_in_days": true,
+     "tags_all": {}
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "data",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_kms_key"
+  },
+  {
+   "address": "aws_s3_bucket.access_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "bucket": "harbor-policy-assistant-access-logs-111122223333-us-east-1",
+     "force_destroy": true,
+     "region": "us-east-1",
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "data"
+     },
+     "timeouts": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "acceleration_status": true,
+     "acl": true,
+     "arn": true,
+     "bucket_domain_name": true,
+     "bucket_namespace": true,
+     "bucket_prefix": true,
+     "bucket_region": true,
+     "bucket_regional_domain_name": true,
+     "cors_rule": true,
+     "grant": true,
+     "hosted_zone_id": true,
+     "id": true,
+     "lifecycle_rule": true,
+     "logging": true,
+     "object_lock_configuration": true,
+     "object_lock_enabled": true,
+     "policy": true,
+     "replication_configuration": true,
+     "request_payer": true,
+     "server_side_encryption_configuration": true,
+     "tags_all": {},
+     "versioning": true,
+     "website": true,
+     "website_domain": true,
+     "website_endpoint": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "access_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket"
+  },
+  {
+   "address": "aws_s3_bucket.invocation_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "bucket": "harbor-policy-assistant-invocations-111122223333-us-east-1",
+     "force_destroy": true,
+     "region": "us-east-1",
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "data"
+     },
+     "timeouts": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "acceleration_status": true,
+     "acl": true,
+     "arn": true,
+     "bucket_domain_name": true,
+     "bucket_namespace": true,
+     "bucket_prefix": true,
+     "bucket_region": true,
+     "bucket_regional_domain_name": true,
+     "cors_rule": true,
+     "grant": true,
+     "hosted_zone_id": true,
+     "id": true,
+     "lifecycle_rule": true,
+     "logging": true,
+     "object_lock_configuration": true,
+     "object_lock_enabled": true,
+     "policy": true,
+     "replication_configuration": true,
+     "request_payer": true,
+     "server_side_encryption_configuration": true,
+     "tags_all": {},
+     "versioning": true,
+     "website": true,
+     "website_domain": true,
+     "website_endpoint": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "invocation_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket"
+  },
+  {
+   "address": "aws_s3_bucket.policies",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "bucket": "harbor-policy-assistant-policies-111122223333-us-east-1",
+     "force_destroy": true,
+     "region": "us-east-1",
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "data"
+     },
+     "timeouts": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "acceleration_status": true,
+     "acl": true,
+     "arn": true,
+     "bucket_domain_name": true,
+     "bucket_namespace": true,
+     "bucket_prefix": true,
+     "bucket_region": true,
+     "bucket_regional_domain_name": true,
+     "cors_rule": true,
+     "grant": true,
+     "hosted_zone_id": true,
+     "id": true,
+     "lifecycle_rule": true,
+     "logging": true,
+     "object_lock_configuration": true,
+     "object_lock_enabled": true,
+     "policy": true,
+     "replication_configuration": true,
+     "request_payer": true,
+     "server_side_encryption_configuration": true,
+     "tags_all": {},
+     "versioning": true,
+     "website": true,
+     "website_domain": true,
+     "website_endpoint": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "policies",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket"
+  },
+  {
+   "address": "aws_s3_bucket_lifecycle_configuration.access_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "region": "us-east-1",
+     "rule": [
+      {
+       "abort_incomplete_multipart_upload": [
+        {
+         "days_after_initiation": 7
+        }
+       ],
+       "expiration": [],
+       "filter": [
+        {
+         "and": [],
+         "object_size_greater_than": null,
+         "object_size_less_than": null,
+         "prefix": "",
+         "tag": []
+        }
+       ],
+       "id": "expire-old-versions",
+       "noncurrent_version_expiration": [
+        {
+         "newer_noncurrent_versions": null,
+         "noncurrent_days": 90
+        }
+       ],
+       "noncurrent_version_transition": [],
+       "prefix": "",
+       "status": "Enabled",
+       "transition": []
+      },
+      {
+       "abort_incomplete_multipart_upload": [
+        {
+         "days_after_initiation": 7
+        }
+       ],
+       "expiration": [
+        {
+         "date": null,
+         "days": 365,
+         "expired_object_delete_marker": false
+        }
+       ],
+       "filter": [
+        {
+         "and": [],
+         "object_size_greater_than": null,
+         "object_size_less_than": null,
+         "prefix": "",
+         "tag": []
+        }
+       ],
+       "id": "expire-logs",
+       "noncurrent_version_expiration": [],
+       "noncurrent_version_transition": [],
+       "prefix": "",
+       "status": "Enabled",
+       "transition": []
+      }
+     ],
+     "timeouts": null,
+     "transition_default_minimum_object_size": "all_storage_classes_128K"
+    },
+    "after_unknown": {
+     "bucket": true,
+     "expected_bucket_owner": true,
+     "id": true,
+     "rule": [
+      {
+       "abort_incomplete_multipart_upload": [
+        {}
+       ],
+       "expiration": [],
+       "filter": [
+        {
+         "and": [],
+         "tag": []
+        }
+       ],
+       "noncurrent_version_expiration": [
+        {}
+       ],
+       "noncurrent_version_transition": [],
+       "transition": []
+      },
+      {
+       "abort_incomplete_multipart_upload": [
+        {}
+       ],
+       "expiration": [
+        {}
+       ],
+       "filter": [
+        {
+         "and": [],
+         "tag": []
+        }
+       ],
+       "noncurrent_version_expiration": [],
+       "noncurrent_version_transition": [],
+       "transition": []
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "access_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_lifecycle_configuration"
+  },
+  {
+   "address": "aws_s3_bucket_lifecycle_configuration.invocation_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "region": "us-east-1",
+     "rule": [
+      {
+       "abort_incomplete_multipart_upload": [
+        {
+         "days_after_initiation": 7
+        }
+       ],
+       "expiration": [],
+       "filter": [
+        {
+         "and": [],
+         "object_size_greater_than": null,
+         "object_size_less_than": null,
+         "prefix": "",
+         "tag": []
+        }
+       ],
+       "id": "expire-old-versions",
+       "noncurrent_version_expiration": [
+        {
+         "newer_noncurrent_versions": null,
+         "noncurrent_days": 90
+        }
+       ],
+       "noncurrent_version_transition": [],
+       "prefix": "",
+       "status": "Enabled",
+       "transition": []
+      },
+      {
+       "abort_incomplete_multipart_upload": [
+        {
+         "days_after_initiation": 7
+        }
+       ],
+       "expiration": [
+        {
+         "date": null,
+         "days": 365,
+         "expired_object_delete_marker": false
+        }
+       ],
+       "filter": [
+        {
+         "and": [],
+         "object_size_greater_than": null,
+         "object_size_less_than": null,
+         "prefix": "",
+         "tag": []
+        }
+       ],
+       "id": "expire-logs",
+       "noncurrent_version_expiration": [],
+       "noncurrent_version_transition": [],
+       "prefix": "",
+       "status": "Enabled",
+       "transition": []
+      }
+     ],
+     "timeouts": null,
+     "transition_default_minimum_object_size": "all_storage_classes_128K"
+    },
+    "after_unknown": {
+     "bucket": true,
+     "expected_bucket_owner": true,
+     "id": true,
+     "rule": [
+      {
+       "abort_incomplete_multipart_upload": [
+        {}
+       ],
+       "expiration": [],
+       "filter": [
+        {
+         "and": [],
+         "tag": []
+        }
+       ],
+       "noncurrent_version_expiration": [
+        {}
+       ],
+       "noncurrent_version_transition": [],
+       "transition": []
+      },
+      {
+       "abort_incomplete_multipart_upload": [
+        {}
+       ],
+       "expiration": [
+        {}
+       ],
+       "filter": [
+        {
+         "and": [],
+         "tag": []
+        }
+       ],
+       "noncurrent_version_expiration": [],
+       "noncurrent_version_transition": [],
+       "transition": []
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "invocation_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_lifecycle_configuration"
+  },
+  {
+   "address": "aws_s3_bucket_lifecycle_configuration.policies",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "region": "us-east-1",
+     "rule": [
+      {
+       "abort_incomplete_multipart_upload": [
+        {
+         "days_after_initiation": 7
+        }
+       ],
+       "expiration": [],
+       "filter": [
+        {
+         "and": [],
+         "object_size_greater_than": null,
+         "object_size_less_than": null,
+         "prefix": "",
+         "tag": []
+        }
+       ],
+       "id": "expire-old-versions",
+       "noncurrent_version_expiration": [
+        {
+         "newer_noncurrent_versions": null,
+         "noncurrent_days": 90
+        }
+       ],
+       "noncurrent_version_transition": [],
+       "prefix": "",
+       "status": "Enabled",
+       "transition": []
+      }
+     ],
+     "timeouts": null,
+     "transition_default_minimum_object_size": "all_storage_classes_128K"
+    },
+    "after_unknown": {
+     "bucket": true,
+     "expected_bucket_owner": true,
+     "id": true,
+     "rule": [
+      {
+       "abort_incomplete_multipart_upload": [
+        {}
+       ],
+       "expiration": [],
+       "filter": [
+        {
+         "and": [],
+         "tag": []
+        }
+       ],
+       "noncurrent_version_expiration": [
+        {}
+       ],
+       "noncurrent_version_transition": [],
+       "transition": []
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "policies",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_lifecycle_configuration"
+  },
+  {
+   "address": "aws_s3_bucket_logging.this[\"invocation_logs\"]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "expected_bucket_owner": null,
+     "region": "us-east-1",
+     "target_grant": [],
+     "target_object_key_format": [],
+     "target_prefix": "invocation_logs/"
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true,
+     "target_bucket": true,
+     "target_grant": [],
+     "target_object_key_format": []
+    },
+    "before": null
+   },
+   "index": "invocation_logs",
+   "mode": "managed",
+   "name": "this",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_logging"
+  },
+  {
+   "address": "aws_s3_bucket_logging.this[\"policies\"]",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "expected_bucket_owner": null,
+     "region": "us-east-1",
+     "target_grant": [],
+     "target_object_key_format": [],
+     "target_prefix": "policies/"
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true,
+     "target_bucket": true,
+     "target_grant": [],
+     "target_object_key_format": []
+    },
+    "before": null
+   },
+   "index": "policies",
+   "mode": "managed",
+   "name": "this",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_logging"
+  },
+  {
+   "address": "aws_s3_bucket_notification.policies",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "eventbridge": true,
+     "lambda_function": [],
+     "queue": [],
+     "region": "us-east-1",
+     "topic": []
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true,
+     "lambda_function": [],
+     "queue": [],
+     "topic": []
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "policies",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_notification"
+  },
+  {
+   "address": "aws_s3_bucket_ownership_controls.access_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "region": "us-east-1",
+     "rule": [
+      {
+       "object_ownership": "BucketOwnerEnforced"
+      }
+     ]
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true,
+     "rule": [
+      {}
+     ]
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "access_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_ownership_controls"
+  },
+  {
+   "address": "aws_s3_bucket_ownership_controls.invocation_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "region": "us-east-1",
+     "rule": [
+      {
+       "object_ownership": "BucketOwnerEnforced"
+      }
+     ]
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true,
+     "rule": [
+      {}
+     ]
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "invocation_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_ownership_controls"
+  },
+  {
+   "address": "aws_s3_bucket_ownership_controls.policies",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "region": "us-east-1",
+     "rule": [
+      {
+       "object_ownership": "BucketOwnerEnforced"
+      }
+     ]
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true,
+     "rule": [
+      {}
+     ]
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "policies",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_ownership_controls"
+  },
+  {
+   "address": "aws_s3_bucket_policy.access_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "region": "us-east-1"
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true,
+     "policy": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "access_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_policy"
+  },
+  {
+   "address": "aws_s3_bucket_policy.invocation_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "region": "us-east-1"
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true,
+     "policy": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "invocation_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_policy"
+  },
+  {
+   "address": "aws_s3_bucket_policy.policies",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "region": "us-east-1"
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true,
+     "policy": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "policies",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_policy"
+  },
+  {
+   "address": "aws_s3_bucket_public_access_block.access_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "block_public_acls": true,
+     "block_public_policy": true,
+     "ignore_public_acls": true,
+     "region": "us-east-1",
+     "restrict_public_buckets": true,
+     "skip_destroy": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "access_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_public_access_block"
+  },
+  {
+   "address": "aws_s3_bucket_public_access_block.invocation_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "block_public_acls": true,
+     "block_public_policy": true,
+     "ignore_public_acls": true,
+     "region": "us-east-1",
+     "restrict_public_buckets": true,
+     "skip_destroy": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "invocation_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_public_access_block"
+  },
+  {
+   "address": "aws_s3_bucket_public_access_block.policies",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "block_public_acls": true,
+     "block_public_policy": true,
+     "ignore_public_acls": true,
+     "region": "us-east-1",
+     "restrict_public_buckets": true,
+     "skip_destroy": null
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "policies",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_public_access_block"
+  },
+  {
+   "address": "aws_s3_bucket_server_side_encryption_configuration.access_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "expected_bucket_owner": null,
+     "region": "us-east-1",
+     "rule": [
+      {
+       "apply_server_side_encryption_by_default": [
+        {
+         "sse_algorithm": "AES256"
+        }
+       ]
+      }
+     ]
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true,
+     "rule": [
+      {
+       "apply_server_side_encryption_by_default": [
+        {
+         "kms_master_key_id": true
+        }
+       ],
+       "blocked_encryption_types": true,
+       "bucket_key_enabled": true
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "access_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_server_side_encryption_configuration"
+  },
+  {
+   "address": "aws_s3_bucket_server_side_encryption_configuration.invocation_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "expected_bucket_owner": null,
+     "region": "us-east-1",
+     "rule": [
+      {
+       "apply_server_side_encryption_by_default": [
+        {
+         "sse_algorithm": "aws:kms"
+        }
+       ],
+       "bucket_key_enabled": true
+      }
+     ]
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true,
+     "rule": [
+      {
+       "apply_server_side_encryption_by_default": [
+        {
+         "kms_master_key_id": true
+        }
+       ],
+       "blocked_encryption_types": true
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "invocation_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_server_side_encryption_configuration"
+  },
+  {
+   "address": "aws_s3_bucket_server_side_encryption_configuration.policies",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "expected_bucket_owner": null,
+     "region": "us-east-1",
+     "rule": [
+      {
+       "apply_server_side_encryption_by_default": [
+        {
+         "sse_algorithm": "aws:kms"
+        }
+       ],
+       "bucket_key_enabled": true
+      }
+     ]
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true,
+     "rule": [
+      {
+       "apply_server_side_encryption_by_default": [
+        {
+         "kms_master_key_id": true
+        }
+       ],
+       "blocked_encryption_types": true
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "policies",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_server_side_encryption_configuration"
+  },
+  {
+   "address": "aws_s3_bucket_versioning.access_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "expected_bucket_owner": null,
+     "mfa": null,
+     "region": "us-east-1",
+     "versioning_configuration": [
+      {
+       "status": "Enabled"
+      }
+     ]
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true,
+     "versioning_configuration": [
+      {
+       "mfa_delete": true
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "access_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_versioning"
+  },
+  {
+   "address": "aws_s3_bucket_versioning.invocation_logs",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "expected_bucket_owner": null,
+     "mfa": null,
+     "region": "us-east-1",
+     "versioning_configuration": [
+      {
+       "status": "Enabled"
+      }
+     ]
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true,
+     "versioning_configuration": [
+      {
+       "mfa_delete": true
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "invocation_logs",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_versioning"
+  },
+  {
+   "address": "aws_s3_bucket_versioning.policies",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "expected_bucket_owner": null,
+     "mfa": null,
+     "region": "us-east-1",
+     "versioning_configuration": [
+      {
+       "status": "Enabled"
+      }
+     ]
+    },
+    "after_identity": {
+     "account_id": null,
+     "bucket": null,
+     "region": null
+    },
+    "after_unknown": {
+     "bucket": true,
+     "id": true,
+     "versioning_configuration": [
+      {
+       "mfa_delete": true
+      }
+     ]
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "policies",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_s3_bucket_versioning"
+  },
+  {
+   "address": "aws_sns_topic.alerts",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "application_failure_feedback_role_arn": null,
+     "application_success_feedback_role_arn": null,
+     "application_success_feedback_sample_rate": null,
+     "archive_policy": null,
+     "content_based_deduplication": false,
+     "delivery_policy": null,
+     "display_name": null,
+     "fifo_topic": false,
+     "firehose_failure_feedback_role_arn": null,
+     "firehose_success_feedback_role_arn": null,
+     "firehose_success_feedback_sample_rate": null,
+     "http_failure_feedback_role_arn": null,
+     "http_success_feedback_role_arn": null,
+     "http_success_feedback_sample_rate": null,
+     "lambda_failure_feedback_role_arn": null,
+     "lambda_success_feedback_role_arn": null,
+     "lambda_success_feedback_sample_rate": null,
+     "name": "harbor-policy-assistant-alerts",
+     "region": "us-east-1",
+     "sqs_failure_feedback_role_arn": null,
+     "sqs_success_feedback_role_arn": null,
+     "sqs_success_feedback_sample_rate": null,
+     "tags": null,
+     "tags_all": {
+      "Ephemeral": "true",
+      "Lab": "terraform-aws-bedrock-rag-lab",
+      "managed-by": "terraform",
+      "project": "harbor-policy-assistant",
+      "purpose": "portfolio-test",
+      "run": "123456",
+      "stack": "data"
+     }
+    },
+    "after_identity": {
+     "arn": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "beginning_archive_time": true,
+     "fifo_throughput_scope": true,
+     "id": true,
+     "kms_master_key_id": true,
+     "name_prefix": true,
+     "owner": true,
+     "policy": true,
+     "signature_version": true,
+     "tags_all": {},
+     "tracing_config": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "alerts",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_sns_topic"
+  },
+  {
+   "address": "aws_sns_topic_policy.alerts",
+   "change": {
+    "actions": [
+     "create"
+    ],
+    "after": {
+     "region": "us-east-1"
+    },
+    "after_identity": {
+     "arn": null
+    },
+    "after_unknown": {
+     "arn": true,
+     "id": true,
+     "owner": true,
+     "policy": true
+    },
+    "before": null
+   },
+   "mode": "managed",
+   "name": "alerts",
+   "provider_name": "registry.terraform.io/hashicorp/aws",
+   "type": "aws_sns_topic_policy"
+  }
+ ],
+ "terraform_version": "1.14.5"
+}

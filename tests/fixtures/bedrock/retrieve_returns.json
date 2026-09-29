@@ -1,0 +1,28 @@
+{
+  "retrievalResults": [
+    {
+      "content": {"type": "TEXT", "text": "Customers may return most items within 30 days of purchase for a full refund to the original payment method. Loyalty members at the Gold tier get 45 days instead of 30."},
+      "location": {"type": "S3", "s3Location": {"uri": "s3://harbor-goods-policies-111122223333/returns/returns-standard-window.md"}},
+      "score": 0.71,
+      "metadata": {"x-amz-bedrock-kb-source-uri": "s3://harbor-goods-policies-111122223333/returns/returns-standard-window.md", "x-amz-bedrock-kb-chunk-id": "1a2b3c", "doc_type": "returns", "title": "Standard return window", "doc_id": "returns-standard-window"}
+    },
+    {
+      "content": {"type": "TEXT", "text": "The return window starts on the delivery date for online orders and on the receipt date for store purchases."},
+      "location": {"type": "S3", "s3Location": {"uri": "s3://harbor-goods-policies-111122223333/returns/returns-standard-window.md"}},
+      "score": 0.66,
+      "metadata": {"x-amz-bedrock-kb-source-uri": "s3://harbor-goods-policies-111122223333/returns/returns-standard-window.md", "x-amz-bedrock-kb-chunk-id": "4d5e6f", "doc_type": "returns", "title": "Standard return window", "doc_id": "returns-standard-window"}
+    },
+    {
+      "content": {"type": "TEXT", "text": "Items bought from the first day of November through the last day of December can be returned until the last day of January of the following year."},
+      "location": {"type": "S3", "s3Location": {"uri": "s3://harbor-goods-policies-111122223333/store-ops/store-holiday-returns-extension.md"}},
+      "score": 0.62,
+      "metadata": {"x-amz-bedrock-kb-source-uri": "s3://harbor-goods-policies-111122223333/store-ops/store-holiday-returns-extension.md", "x-amz-bedrock-kb-chunk-id": "7a8b9c", "doc_type": "store-ops", "title": "Holiday return extension", "doc_id": "store-holiday-returns-extension"}
+    },
+    {
+      "content": {"type": "TEXT", "text": "Opened electronics may be returned within 15 days."},
+      "location": {"type": "S3", "s3Location": {"uri": "s3://harbor-goods-policies-111122223333/returns/returns-opened-electronics.md"}},
+      "score": 0.41,
+      "metadata": {"x-amz-bedrock-kb-source-uri": "s3://harbor-goods-policies-111122223333/returns/returns-opened-electronics.md", "x-amz-bedrock-kb-chunk-id": "0d1e2f", "doc_type": "returns", "title": "Opened electronics returns", "doc_id": "returns-opened-electronics"}
+    }
+  ]
+}
