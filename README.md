@@ -40,9 +40,9 @@ Bases with Amazon S3 Vectors and a Bedrock guardrail, defined in Terraform and e
 | [`infra/terraform/`](infra/terraform) | Three stacks and the tests that pin their guarantees |
 | [`docs/runbook.md`](docs/runbook.md) | Re-ingest, rotate the model, calibrate selection, investigate a bad answer |
 
-## Results
+### Results
 
-**Live run** in a sandbox AWS account (us-east-1, 2026-09-28): deployed, tested and destroyed in one run, with no
+**Live run** in a sandbox AWS account (us-east-1): deployed, tested and destroyed in one run, with no
 public resources. The 40-question golden set ran against the deployed knowledge base, Nova Lite and the guardrail.
 
 | Metric | Live | Gate |
@@ -225,7 +225,7 @@ Part of the [AWS DevOps portfolio](https://github.com/gamaware/aws-devops-portfo
 keyless deploy roles and security gates, is covered in
 [github-actions-aws-oidc-lab](https://github.com/gamaware/github-actions-aws-oidc-lab).
 
-## Credits
+### Credits
 
 Built on ideas and patterns from these sources, rewritten for this design; no files are copied:
 
