@@ -220,9 +220,8 @@ set timeouts. Pull request jobs get no cloud access.
 
 ## Related work
 
-Part of the [AWS DevOps portfolio](https://github.com/gamaware/aws-devops-portfolio), under the service
-[RAG on Amazon Bedrock on Upwork](https://www.upwork.com/freelancers/~014b3520cf9e140103). The pipeline side,
-keyless deploy roles and security gates, is covered in
+Part of the [AWS DevOps portfolio](https://github.com/gamaware/aws-devops-portfolio). The pipeline side, keyless
+deploy roles and security gates, is covered in
 [github-actions-aws-oidc-lab](https://github.com/gamaware/github-actions-aws-oidc-lab).
 
 ### Credits
