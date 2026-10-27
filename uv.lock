@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.13"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -96,15 +96,15 @@ wheels = [
 
 [[package]]
 name = "boto3-stubs"
-version = "1.43.104"
+version = "1.43.115"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "botocore-stubs" },
     { name = "types-s3transfer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/65/b2/755432894c28d1c36230e62503ff198dc973cfaa13c91a1c8defb842ca78/boto3_stubs-1.43.104.tar.gz", hash = "sha256:d1883ed4a78282b072e37bf08c4cfba8b220c8feb1371681eb35399b189111a3", size = 105265, upload-time = "2026-09-28T20:24:27.354Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8d/54/4cf798003d461d1422e3655a954d55ffc6cda22476adf40671b2fb3c935b/boto3_stubs-1.43.115.tar.gz", hash = "sha256:7712bbf021c391f8c8d4c7209ddc1f018b4a362a35732058392971a7e903af87", size = 105913, upload-time = "2026-10-19T20:43:55.104Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/97/27/06fb40548d9bc4ad30157222024fb145f088185f85862a70072346f298bb/boto3_stubs-1.43.104-py3-none-any.whl", hash = "sha256:95490f20724e0e00aa18b19625a280785bd26689c89e38363bbb9f2c6b5fa360", size = 71850, upload-time = "2026-09-28T20:24:23.449Z" },
+    { url = "https://files.pythonhosted.org/packages/25/53/e39068349bfeca0f1fc79484d239002bdfec5c067d26e19e7c9a7929c3cb/boto3_stubs-1.43.115-py3-none-any.whl", hash = "sha256:be8366d223e06d42dbfca61b7b75e30cc9effb6461389e28a7005397737fd0eb", size = 72202, upload-time = "2026-10-19T20:43:50.314Z" },
 ]
 
 [package.optional-dependencies]
@@ -505,7 +505,7 @@ dev = [
 [package.metadata.requires-dev]
 dev = [
     { name = "boto3", specifier = "==1.43.104" },
-    { name = "boto3-stubs", extras = ["bedrock-agent", "bedrock-agent-runtime", "bedrock-runtime"], specifier = "==1.43.104" },
+    { name = "boto3-stubs", extras = ["bedrock-agent", "bedrock-agent-runtime", "bedrock-runtime"], specifier = "==1.43.115" },
     { name = "mypy", specifier = "==2.3.1" },
     { name = "pytest", specifier = "==9.1.1" },
     { name = "pyyaml", specifier = "==6.0.3" },
