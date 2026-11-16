@@ -19,6 +19,7 @@ updates:
     groups:
       uv-all:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: terraform
     directories:
@@ -31,5 +32,5 @@ updates:
       default-days: 7
     groups:
       terraform-all:
-        group-by: dependency-name
         patterns: ["*"]
+        update-types: ["minor", "patch"]
