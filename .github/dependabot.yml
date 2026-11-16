@@ -16,6 +16,9 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    groups:
+      uv-all:
+        patterns: ["*"]
 
   - package-ecosystem: terraform
     directories:
@@ -26,3 +29,7 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    groups:
+      terraform-all:
+        group-by: dependency-name
+        patterns: ["*"]
